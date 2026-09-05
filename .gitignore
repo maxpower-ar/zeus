@@ -1,0 +1,16 @@
+# Compilación de Arduino
+build/
+*.hex
+*.bin
+*.elf
+*.map
+
+# Editores y sistema
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Datos descargados de la estación (no van al repositorio)
+*.csv
+datos/
