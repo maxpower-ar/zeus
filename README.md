@@ -30,7 +30,7 @@ parte del proyecto es entregarle los datos en un formato estable y documentado.
 | Temperatura y humedad | DHT22 | Disponible |
 | Temperatura (redundante ×2) | LM35Z | Disponible |
 | Dirección del viento | 8 × Hall A3144 (veleta de 8 rumbos) | Disponible |
-| Velocidad del viento | Motor DC + paletas (anemómetro generador) | Disponible |
+| Velocidad del viento | Encoder óptico ranurado + paletas | Disponible |
 | Presión atmosférica | BME280 | **A comprar** |
 | Gas / calidad de aire | MQ-135 o ENS160 | **A comprar** |
 | Hora | DS3231 (RTC) | **A comprar** |
@@ -49,6 +49,22 @@ Un imán montado en el eje de la veleta pasa frente a ocho sensores Hall dispues
 uno por cada rumbo (N, NE, E, SE, S, SO, O, NO). El sensor que queda enfrentado al imán se
 activa. Sin contactos que se desgasten, sin partes que se ensucien y sin necesidad de
 calibración: la dirección es la posición física del sensor.
+
+### Cómo funciona el anemómetro
+
+Una rueda ranurada acoplada al eje de las paletas gira dentro de un fotointerruptor en U: un LED
+infrarrojo de un lado, un fototransistor del otro. Cada ranura corta el haz y produce un pulso,
+y la frecuencia de pulsos da la velocidad de giro.
+
+Con unas veinte ranuras por vuelta, el instrumento tiene resolución suficiente incluso con
+viento muy suave. Y al ser óptico y sin contacto, no agrega fricción al eje: el único límite es
+el rodamiento.
+
+Se probó y se descartó un anemómetro basado en un motor de corriente continua usado como dinamo.
+La física es correcta —la tensión generada es proporcional a la velocidad de giro— pero las
+escobillas del motor imponen tanta fricción que no arranca con brisa suave, y el instrumento
+marca cero justo en el rango de viento más frecuente. El motor se conserva para medir esa
+diferencia y documentarla.
 
 ## Cómo abrir el proyecto
 

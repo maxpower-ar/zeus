@@ -14,8 +14,9 @@ Placa: **ESP32 DevKit V1, 30 pines, ESP32-WROOM-32**.
 | DHT22 (dato) | GPIO4 | Digital E/S | Resistencia de pull-up de 10 kΩ a 3.3 V |
 | LM35 #1 | GPIO34 (D34) | **ADC1**, solo entrada | Salida directa, no supera 3.3 V |
 | LM35 #2 | GPIO35 (D35) | **ADC1**, solo entrada | |
-| Anemómetro (motor) | GPIO36 (VP) | **ADC1**, solo entrada | **Con divisor resistivo** |
+| **Anemómetro (encoder óptico)** | **GPIO18** | Digital entrada, interrupción | Cuenta pulsos. **Nunca en 36 ni 39** |
 | Sensor de gas | GPIO39 (VN) | **ADC1**, solo entrada | Con divisor si la salida es de 5 V |
+| Anemómetro de motor *(fase 3b)* | GPIO36 (VP) | **ADC1**, solo entrada | Solo para el experimento comparativo. Con divisor resistivo |
 | Tensión de batería | GPIO33 | **ADC1** | Con divisor. Fase opcional B |
 | I²C SDA | GPIO21 | Bus compartido | BME280 + DS3231 |
 | I²C SCL | GPIO22 | Bus compartido | |
@@ -27,7 +28,7 @@ Placa: **ESP32 DevKit V1, 30 pines, ESP32-WROOM-32**.
 | Hall SO | GPIO26 | Digital entrada | |
 | Hall O | GPIO27 | Digital entrada | |
 | Hall NO | GPIO32 | Digital entrada | Es ADC1 pero se usa como digital |
-| *(reservado)* | GPIO5, 18, 19, 23 | SPI | Para microSD, fase opcional C |
+| *(reservado)* | GPIO5, 19, 23 | SPI | Para microSD, fase opcional C |
 
 Pines deliberadamente **libres**: GPIO 0, 2, 12, 15 (strapping) y GPIO 1, 3 (puerto serie USB).
 
@@ -112,3 +113,19 @@ valor de la tensión, que es justamente el dato que queremos medir.
 El ADC del ESP32 no es lineal cerca de 0 V ni cerca de 3.3 V. Los divisores resistivos se
 calculan para que la señal caiga en la zona central del rango, no para aprovechar hasta el
 último milivoltio.
+
+### Por qué el encoder del anemómetro no puede ir en GPIO36 ni GPIO39
+
+El ESP32 tiene un defecto de silicio documentado: los pines **GPIO36 (VP) y GPIO39 (VN)**
+producen micro-glitches espurios —pulsos de nanosegundos— cuando el ADC realiza conversiones.
+
+Para leer una tensión eso no molesta. Pero el anemómetro **cuenta pulsos**, y cada glitch se
+contaría como una ranura del disco que nunca pasó: la velocidad del viento saldría inflada, con
+un error que además crecería cuanto más se muestrearan los sensores analógicos. Es un bug
+difícil de encontrar porque las lecturas siguen pareciendo verosímiles.
+
+Por eso el encoder está en **GPIO18**, que es un pin digital común y limpio.
+
+Esto le quita un pin a la reserva de SPI para la microSD (fase opcional C), pero no es un
+problema: el ESP32 tiene una matriz de conmutación que permite mapear el bus SPI a **casi
+cualquier pin**, así que la SD puede usar 5, 19, 23 y cualquier otro libre como CS.

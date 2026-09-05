@@ -44,6 +44,35 @@ Completar en la fase 0.
 
 ---
 
+## 2026-09-05 — Diseño — Cambio de anemómetro a encoder óptico
+
+**Qué se decidió:** el anemómetro pasa de ser un motor DC usado como dinamo a un **encoder
+óptico ranurado** (el fotointerruptor en U de los kits de motor TT), que ya estaba disponible.
+
+**Por qué:** el motor DC funciona eléctricamente —es un dinamo, `V = ke · ω`, relación
+lineal— pero sus escobillas apretadas contra el colector imponen una fricción que exige un par
+mínimo para arrancar. Como el par del viento crece con el cuadrado de la velocidad, por debajo
+de unos 8-15 km/h el rotor no gira y el instrumento informa cero, indistinguible de la calma.
+Ese rango es justamente el del viento más frecuente.
+
+El encoder óptico no toca el eje, así que no agrega fricción, y da ~20 pulsos por vuelta en
+lugar de 1-2: resolución suficiente incluso a viento muy suave. No hubo que comprar nada.
+
+**Riesgos identificados:**
+
+- **El sol puede cegarlo.** Es un sensor infrarrojo y el sol emite mucho infrarrojo. Requiere
+  carcasa opaca obligatoria, y hay que probarlo al sol del mediodía antes de darlo por bueno
+- **No puede ir en GPIO36 ni GPIO39.** Esos pines producen glitches espurios cuando el ADC
+  convierte; contando pulsos, cada glitch inflaría la velocidad. Se asignó **GPIO18**
+- **Hay que contar las ranuras del disco.** Se asumen 20, pero existen de 12 y 24. Un número
+  equivocado desplaza toda la escala por un factor constante, con lecturas que igual parecen
+  razonables
+
+**Pendiente:** el motor DC se conserva para la fase 3b, como experimento comparativo: medir el
+umbral de arranque de cada uno y documentar la diferencia.
+
+---
+
 ## 2026-09-05 — Fase inicial — Estructura del proyecto
 
 **Qué se hizo:** se definió la arquitectura de dos nodos, se creó la estructura de carpetas, el

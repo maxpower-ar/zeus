@@ -62,22 +62,47 @@ y las **fases opcionales**, que solo se abordan una vez terminado el núcleo.
 ---
 
 ### Fase 3 — Anemómetro
-> Sin componentes nuevos. Motor DC + paletas.
+> Sin componentes nuevos. Encoder óptico ranurado (el de los motores TT) + paletas.
 
-- [ ] Divisor resistivo a la salida del motor para no superar 3.3 V en el ADC
-      (**el conversor de nivel no sirve para señales analógicas**)
-- [ ] Leer la tensión generada y verificarla con el UT890C en paralelo
-- [ ] Construir la tabla de calibración tensión → km/h y guardarla en `hardware/calibraciones/`
-- [ ] Implementar la conversión por interpolación entre los puntos medidos
-- [ ] Determinar la **velocidad de arranque**: por debajo de qué viento el motor no gira
+**Instrumento:** módulo fotointerruptor en U con su rueda ranurada acoplada al eje de las
+paletas. Cada ranura corta el haz infrarrojo y produce un pulso; la frecuencia de pulsos da la
+velocidad de giro.
 
-**Verificación:** una tabla de calibración real, medida, documentada, y la lectura en km/h
-coherente con ella.
+- [ ] **Contar las ranuras del disco** y anotarlo (se asumen 20, pero hay de 12 y de 24; si el
+      número está mal, toda la escala queda mal por un factor constante)
+- [ ] Probar el módulo **a 3.3 V**: si funciona, no hace falta conversor de nivel. Verificar la
+      tensión de salida con el UT890C antes de conectarlo al ESP32
+- [ ] Contar pulsos con interrupción en **GPIO18** (nunca en GPIO36 ni 39: producen glitches
+      espurios cuando el ADC convierte, y cada glitch se contaría como una ranura)
+- [ ] Medir el **período entre pulsos** con `micros()` en vez de contar en una ventana fija:
+      da buena resolución incluso a viento suave
+- [ ] Determinar la **velocidad de arranque** del rotor
+- [ ] Calibrar la constante `K` con el método del auto y guardarla en
+      `hardware/calibraciones/anemometro.md`
+- [ ] **Probar el sensor al sol del mediodía**
 
-> **Advertencia esperada:** un motor DC tiene zona muerta a baja velocidad (la fricción de las
-> escobillas impide que gire con brisa suave) y la relación tensión→velocidad no es
-> perfectamente lineal. Por eso la calibración es una **tabla de puntos medidos**, no una
-> fórmula inventada de antemano.
+**Verificación:** la velocidad leída se corresponde con la del velocímetro del auto en la prueba
+de calibración, y el sensor sigue contando pulsos bajo sol directo.
+
+> **La prueba del sol no es opcional.** El sensor es infrarrojo y el sol emite mucho infrarrojo:
+> la luz directa en la ranura de la U puede saturar el fototransistor y dejar el anemómetro
+> ciego justo en los días despejados. Se resuelve en el montaje —carcasa opaca, con la rueda
+> adentro y solo el eje saliendo—, no en el código. Esa misma carcasa lo protege del agua, el
+> polvo y los insectos.
+
+#### Fase 3b — Comparación con el anemómetro de motor DC *(opcional pero recomendada)*
+
+El motor ya está comprado y montarlo cuesta una tarde. Medir sus límites convierte la elección
+de diseño en un resultado experimental propio.
+
+- [ ] Divisor resistivo a la salida del motor (**el conversor de nivel no sirve para señales
+      analógicas**) hacia GPIO36
+- [ ] Medir su **velocidad de arranque** y compararla con la del encoder
+- [ ] Documentar la comparación en `hardware/calibraciones/anemometro.md`
+
+Poder escribir "el anemómetro de motor no detecta nada por debajo de 11 km/h, el de encoder
+arranca a 3" con mediciones propias vale mucho más en la defensa del proyecto que citar una
+tabla ajena.
 
 ---
 
