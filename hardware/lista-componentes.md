@@ -16,7 +16,8 @@ componente no está acá, no existe en el proyecto.
 | Conversor de nivel 8 canales | 2 | Hall 5 V → ESP32 3.3 V | 5 V y 3.3 V | **Solo señales digitales** |
 | Display OLED I²C | 1 | Interfaz local (fase opcional A) | 3.3 V | SSD1306, dirección 0x3C |
 | Botones | varios | Navegación del menú | — | Con `INPUT_PULLUP`, a GND |
-| **Encoder óptico ranurado en U** + rueda | 1 | **Anemómetro** (instrumento elegido) | Probar a 3.3 V | El de los motores TT. Necesita carcasa opaca: el sol lo ciega |
+| **Encoder óptico ranurado en U (FC-03)** + rueda | 1 | **Anemómetro** (sensor elegido) | Probar a 3.3 V | LM393, 4 pines (VCC/GND/DO/AO). Ver `img/lm393.jpeg`. Necesita carcasa opaca: el sol lo ciega |
+| Cooler Jamicon JF0825B1xx, 80 mm | 1 | **Candidato a rotor y eje** del anemómetro | 12 V (no se alimenta) | Brushless, **doble rodamiento a bolillas**. Ver `img/cooler_JF0825B1HS-R.jpeg` |
 | Motor DC + paletas | 1 | Anemómetro de comparación (fase 3b) | — | Descartado como instrumento. Requiere divisor resistivo |
 | Multímetro **UT890C** | 1 | Instrumento de referencia | — | Toda calibración se contrasta con él |
 
@@ -57,7 +58,7 @@ sería un problema si se hace la fase opcional de batería.
 |---|---|
 | Resistencias variadas (1 kΩ, 2.2 kΩ, 10 kΩ) | Divisores resistivos y pull-up del DHT22 |
 | Imán de neodimio pequeño | Eje de la veleta |
-| Rodamiento libre | Eje del anemómetro. Define el umbral de arranque: cuanto menos fricción, más sensible a la brisa |
+| Rodamiento libre | Eje del anemómetro. **Solo si no sirve el del cooler**, que ya trae doble rodamiento a bolillas |
 | Caja o tubo opaco | Carcasa del encoder óptico. **Imprescindible**: sin ella el sol lo deja ciego |
 | Cables Dupont y protoboard | Armado de banco |
 | Fuente de 5 V / 2 A o powerbank | Alimentación |

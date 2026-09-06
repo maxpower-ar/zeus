@@ -68,6 +68,10 @@ y las **fases opcionales**, que solo se abordan una vez terminado el núcleo.
 paletas. Cada ranura corta el haz infrarrojo y produce un pulso; la frecuencia de pulsos da la
 velocidad de giro.
 
+- [ ] **Elegir el rotor y el eje**, comparando a mano el cooler Jamicon (doble rodamiento a
+      bolillas) contra el eje del kit TT: girarlos con el dedo y cronometrar cuánto siguen
+      girando solos. Más tiempo de giro libre = menos fricción = detecta brisa más suave.
+      Anotar en `hardware/calibraciones/anemometro.md`
 - [ ] **Contar las ranuras del disco** y anotarlo (se asumen 20, pero hay de 12 y de 24; si el
       número está mal, toda la escala queda mal por un factor constante)
 - [ ] Probar el módulo **a 3.3 V**: si funciona, no hace falta conversor de nivel. Verificar la
@@ -89,6 +93,12 @@ de calibración, y el sensor sigue contando pulsos bajo sol directo.
 > ciego justo en los días despejados. Se resuelve en el montaje —carcasa opaca, con la rueda
 > adentro y solo el eje saliendo—, no en el código. Esa misma carcasa lo protege del agua, el
 > polvo y los insectos.
+
+> **Sobre el cooler como rotor:** un ventilador brushless sin alimentar no gira libre — los
+> imanes del rotor son atraídos por los polos de hierro del estator (*cogging*), y eso impone un
+> umbral de arranque igual que las escobillas de un motor. Si al girarlo con el dedo se siente
+> "por pasitos", conviene desarmarlo y quitarle el estator: queda solo el doble rodamiento, sin
+> cogging, que es lo único que interesa de esa pieza.
 
 #### Fase 3b — Comparación con el anemómetro de motor DC *(opcional pero recomendada)*
 

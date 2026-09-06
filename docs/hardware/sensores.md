@@ -166,6 +166,63 @@ servicio meteorológico local en un día ventoso.
 
 ---
 
+## Cooler brushless — candidato a rotor y eje del anemómetro
+
+Ventilador Jamicon de 80 mm, 12 V, **brushless con doble rodamiento a bolillas**
+(`img/cooler_JF0825B1HS-R.jpeg`). No es un sensor: compite con el **rotor y el eje** que habría
+que fabricar, no con el FC-03.
+
+### No sirve como generador
+
+En un motor con escobillas las bobinas llegan a los bornes a través del colector: girarlo
+produce tensión en los cables. En un **brushless** las bobinas están en el estator y un
+integrado con un Hall interno las conmuta. **Ese integrado está entre las bobinas y los cables**,
+con sus transistores cortados, así que la tensión generada no sale: se miden milivoltios.
+
+Tampoco sirve la salida de tacómetro de los modelos de tres cables: ese transistor lo gobierna
+el Hall interno, que solo funciona con el ventilador alimentado a 12 V — y alimentado, el
+ventilador gira solo. No se puede medir viento con algo que se mueve por su cuenta.
+
+> Verificar igual con el UT890C, girando el rotor a mano y midiendo entre rojo y negro en
+> continua y en alterna. Un dato medido vale más que esta explicación.
+
+### Lo que sí aporta: el rodamiento
+
+El doble rodamiento a bolillas es de fábrica, preciso, pensado para girar años sin parar y
+funciona en cualquier orientación. Como el umbral de arranque del anemómetro lo fija casi
+enteramente la fricción del eje, es la pieza más valiosa del conjunto.
+
+**Uso propuesto:** sacarle el rotor, montar las cazoletas en el cubo y conservar el FC-03 como
+sensor.
+
+### El cogging
+
+Un brushless sin alimentar **no gira libre**: los imanes permanentes del rotor son atraídos por
+los polos de hierro del estator, y el rotor prefiere ciertas posiciones. Es un umbral de
+arranque, igual que el de las escobillas, y este ventilador es de 0.37 A —imanes fuertes—, así
+que hay motivo para sospechar.
+
+**Se comprueba sin instrumentos:** girar el rotor con el dedo. Si se siente "por pasitos", hay
+cogging. Cronometrar además cuánto sigue girando solo tras un empujón, y comparar con el eje del
+kit TT: más tiempo de giro libre significa menos fricción.
+
+Si hay cogging, la solución es desarmarlo y quitar el estator con sus bobinas, dejando solo el
+rotor en el rodamiento. Sin hierro cerca de los imanes el cogging desaparece por completo.
+
+### Por qué no usarlo entero como anemómetro de hélice
+
+Un ventilador axial solo responde al viento que sopla **a lo largo de su eje**: tiene que
+apuntar al viento. Eso obliga a montarlo sobre la veleta, y entonces el sensor y sus cables
+giran con ella y se retuercen — hacen falta anillos rozantes o limitar el giro.
+
+Es un instrumento real y respetable (anemómetro de hélice con veleta), pero las cazoletas son
+**omnidireccionales**: no les importa de dónde viene el viento y no hay que acoplarlas a nada
+que gire. Para este proyecto, esa simplicidad mecánica decide.
+
+Queda como alternativa a probar en la fase 3b si el rotor de cazoletas no funciona bien.
+
+---
+
 ## Motor DC + paletas — anemómetro de comparación *(experimento, no instrumento)*
 
 Un motor de corriente continua girado por el viento funciona como **dinamo**: las bobinas del
