@@ -44,6 +44,94 @@ Completar en la fase 0.
 
 ---
 
+## 2026-09-06 — Fase 1 — DHT22 verificado en banco
+
+**Qué se hizo:** se conectó el DHT22 a GPIO4 (VCC a 3.3 V, DATA a GPIO4, GND común) y se
+probó con el sketch `prueba_dht22/`. Librerías: "DHT sensor library" de Adafruit más
+"Adafruit Unified Sensor".
+
+**Qué se midió:**
+
+| Condición | Temperatura | Humedad |
+|---|---|---|
+| Reposo (ambiente) | 21.0 °C | 47.7 % |
+| Soplando sobre el sensor | 23.6 °C | 98.0 % |
+| Recuperación tras soplar | 21.3 °C | ~60 % |
+| Sensor apoyado contra la pava caliente (sin vapor) | 26.7 °C | 41 % |
+
+Lecturas estables en reposo (±0.3 °C entre muestras consecutivas) y respuesta rápida en las
+dos magnitudes. Ninguna lectura inválida durante la prueba.
+
+**Secuencia real de la prueba, en orden:** reposo, después vapor de la pava (la humedad llegó
+a 98 %), después se retiró el vapor y se apoyó el sensor contra la pava caliente, y ahí la
+temperatura subió a 26.7 °C mientras la humedad caía a 41 %.
+
+**Observación que vale documentar:** en esa última etapa la temperatura **sube** y la humedad
+**baja** al mismo tiempo. No es un error: el DHT22 informa humedad *relativa*, y el aire
+caliente admite mucho más vapor, así que el mismo contenido de agua representa un porcentaje
+menor a mayor temperatura. Se suma que el sensor venía saturado del vapor y se estaba secando.
+Sirve como demostración de que las dos magnitudes se miden de forma independiente.
+
+**Estado del sensor:** verificado y en uso. Es el único sensor de temperatura del proyecto
+hasta que llegue el BME280 de la fase 4, después del descarte de los dos LM35.
+
+**Pendiente para la próxima:** verificar que una desconexión del DHT22 produzca una lectura
+marcada como inválida (y no un cero). Completar la fase 0: anotar las MAC de las dos placas.
+
+---
+
+## 2026-09-06 — Fase 1 — Los dos LM35 no funcionan
+
+**Qué se hizo:** primer banco de sensores. Se cableó un LM35Z a GPIO34 (ADC1) alimentado
+desde VIN, y se escribió un sketch de prueba en `prueba_lm35/` que informa promedio, mínimo
+y máximo de cada ventana de muestreo.
+
+**Qué se midió:** (multímetro UT890C, punta negra fija en GND del ESP32)
+
+Con el sensor **bien orientado** (cara impresa hacia el observador: izquierda +Vs, centro
+Vout, derecha GND):
+
+| Punto | Valor |
+|---|---|
+| Alimentación entre patas extremas | 4.8 V (correcto) |
+| Salida (pata del centro) | ~10-30 mV, errático |
+| Salida apretando el sensor con los dedos | no responde |
+| Temperatura ambiente esperada | ~250 mV |
+
+Se probaron **los dos LM35**, con el mismo resultado. Inscripción del encapsulado:
+`89015` sobre `LM35DZ`. El encapsulado se mantiene frío, así que no hay consumo anómalo.
+
+**Conclusión:** los dos sensores están fallados o no son LM35 (el código `9015` de la
+inscripción corresponde a un transistor común; se sospecha componente clonado). Un LM35 sano
+entrega 10 mV/°C y responde en segundos al calor de la mano. Estos no hacen ninguna de las
+dos cosas con alimentación verificada de 4.8 V.
+
+**Qué falló durante la búsqueda:** (queda anotado porque costó varias horas)
+
+- **Una parte del tiempo el sensor estuvo alimentado al revés.** Con polaridad invertida el
+  LM35 no se calienta —queda frío, sin señal de alarma— así que el síntoma es idéntico al de
+  un sensor muerto. La orientación se verifica midiendo cada pata contra el GND del ESP32,
+  no a ojo
+- **Se midió con la punta negra en una pata del sensor en vez de en GND del ESP32.** Con la
+  referencia moviéndose, ninguna lectura significa nada. La punta negra va siempre a un GND
+  conocido
+- **Se midió en la escala de 60 V.** Con paso de 10 mV es inservible para una señal de
+  250 mV. Para el LM35 hay que usar el rango de 600 mV
+- **`142.0 mV` es el piso del ADC del ESP32** en escala 0 db (la cuenta cero traducida a
+  milivoltios), no un cero real. Un pin al aire da ese valor exacto y quieto. Sirve como
+  referencia de "nada conectado": se comprobó dejando GPIO35 sin conectar como control
+- El mensaje ilegible del monitor serie al arrancar es normal: es la ROM de arranque del
+  ESP32 hablando a 74880 baudios antes de que el sketch abra el puerto a 115200
+
+**Decisión:** la temperatura queda a cargo del **DHT22**, que era el sensor de referencia de
+los tres. Se pierde la redundancia pero no la magnitud. El BME280 de la fase 4 va a aportar
+una segunda temperatura para contrastar.
+
+**Pendiente para la próxima:** probar el DHT22 (temperatura y humedad). Conseguir LM35
+confiables queda como mejora opcional, no como bloqueo.
+
+---
+
 ## 2026-09-05 — Diseño — Cambio de anemómetro a encoder óptico
 
 **Qué se decidió:** el anemómetro pasa de ser un motor DC usado como dinamo a un **encoder

@@ -30,11 +30,11 @@ y las **fases opcionales**, que solo se abordan una vez terminado el núcleo.
 ### Fase 1 — Sensores de banco, uno por vez
 > Sin componentes nuevos. DHT22 + 2 × LM35Z.
 
-- [ ] DHT22 conectado y leyendo temperatura y humedad
-- [ ] LM35 #1 leyendo temperatura por ADC1
-- [ ] LM35 #2 leyendo temperatura por ADC1
-- [ ] Contrastar las tres temperaturas entre sí y contra el UT890C
-- [ ] Registrar el error de cada sensor en `hardware/calibraciones/`
+- [x] DHT22 conectado y leyendo temperatura y humedad
+- [ ] ~~LM35 #1 leyendo temperatura por ADC1~~ — **sensor fallado**, ver bitácora 2026-09-06
+- [ ] ~~LM35 #2 leyendo temperatura por ADC1~~ — **sensor fallado**, descartado
+- [ ] Contrastar las temperaturas entre sí y contra el UT890C *(solo queda el DHT22; se retoma en la fase 4 con el BME280)*
+- [x] Registrar el error de cada sensor en `hardware/calibraciones/` (ver `temperatura.md`)
 - [ ] Cada función de lectura devuelve además si el dato es **válido** (sensor desconectado
       debe producir un dato inválido, no un cero silencioso)
 

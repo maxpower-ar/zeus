@@ -76,6 +76,19 @@ Este repositorio **es el sketchbook de Arduino**. Configurá el IDE una sola vez
 Después de eso, `Archivo → Sketchbook` muestra los dos sketches y la librería compartida se
 encuentra sola. Placa a seleccionar: **ESP32 Dev Module**. Monitor serie a **115200**.
 
+### Librerías que hay que instalar
+
+No viajan en el repositorio: son código de terceros. Se instalan una vez por máquina desde
+**Herramientas → Administrar bibliotecas**:
+
+| Librería | Autor | Para qué |
+|---|---|---|
+| DHT sensor library | Adafruit | DHT22 (temperatura y humedad) |
+| Adafruit Unified Sensor | Adafruit | Dependencia de la anterior; el IDE la ofrece solo |
+
+El Arduino IDE las descarga dentro de `libraries/` de este repositorio, porque el repositorio
+es el sketchbook. Están excluidas en el `.gitignore`.
+
 ## Organización
 
 ```

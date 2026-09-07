@@ -14,3 +14,11 @@ desktop.ini
 # Datos descargados de la estación (no van al repositorio)
 *.csv
 datos/
+
+# Librerías de terceros instaladas por el Arduino IDE.
+# Como el repositorio es el sketchbook, el IDE las descarga acá adentro, pero no
+# son código nuestro y no deben viajar en el repositorio. Se instalan en cada máquina
+# desde Herramientas -> Administrar bibliotecas (ver README).
+# La excepción es libraries/EstacionComun/, que sí es del proyecto.
+libraries/*
+!libraries/EstacionComun/
