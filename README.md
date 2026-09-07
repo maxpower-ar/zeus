@@ -95,11 +95,16 @@ es el sketchbook. Están excluidas en el `.gitignore`.
 estacion_campo/          Firmware del nodo registrador
 estacion_interfaz/       Firmware del nodo puente USB
 libraries/EstacionComun/ Formato de datos y protocolo, compartidos por ambos nodos
+pruebas/                 Sketches de prueba de concepto, uno por sensor (no son firmware)
 docs/                    Plan de trabajo, bitácora y documentación técnica
 hardware/                Componentes y calibraciones medidas
 tools/                   Utilidades de PC para probar el enlace serie
 img/                     Fotos de los componentes reales
 ```
+
+En `pruebas/` va un sketch mínimo por sensor, para verificarlo aislado antes de integrarlo al
+firmware. No forman parte del producto: son banco de pruebas. El Arduino IDE los muestra en
+`Archivo → Sketchbook → pruebas`.
 
 El código que define **cómo se ve un dato** y **cómo viaja por el aire** está en un solo lugar
 (`libraries/EstacionComun/`) y lo usan los dos firmwares. Duplicarlo garantizaría que algún día

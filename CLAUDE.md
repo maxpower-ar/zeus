@@ -39,7 +39,8 @@ si sobra tiempo.
 > Arduino IDE → Archivo → Preferencias → Ubicación del sketchbook →
 > `C:\Users\Usuario\Documents\Max\estacion_metereologica`
 
-Con eso el IDE descubre solo los dos sketches y la librería compartida en `libraries/`.
+Con eso el IDE descubre solo los dos sketches, los de `pruebas/` y la librería compartida en
+`libraries/`.
 Es lo que permite compartir código sin duplicarlo.
 
 - Placa: **ESP32 Dev Module** (DevKit V1, 30 pines, ESP32-WROOM-32).
@@ -74,6 +75,7 @@ pin nuevo, leer ese archivo** — no reasignar pines de memoria.
 estacion_campo/          Sketch del nodo registrador
 estacion_interfaz/       Sketch del nodo puente USB
 libraries/EstacionComun/ Código compartido: Medicion, Protocolo, Transporte
+pruebas/                 Sketches de prueba de concepto, uno por sensor. NO son firmware
 docs/                    Plan, bitácora, protocolo, formato de datos, hardware
 hardware/                Lista de componentes y calibraciones reales
 tools/                   Scripts de PC para probar el puerto serie

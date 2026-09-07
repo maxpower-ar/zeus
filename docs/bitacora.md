@@ -47,7 +47,7 @@ Completar en la fase 0.
 ## 2026-09-06 — Fase 1 — DHT22 verificado en banco
 
 **Qué se hizo:** se conectó el DHT22 a GPIO4 (VCC a 3.3 V, DATA a GPIO4, GND común) y se
-probó con el sketch `prueba_dht22/`. Librerías: "DHT sensor library" de Adafruit más
+probó con el sketch `pruebas/dht22/`. Librerías: "DHT sensor library" de Adafruit más
 "Adafruit Unified Sensor".
 
 **Qué se midió:**
@@ -83,7 +83,7 @@ marcada como inválida (y no un cero). Completar la fase 0: anotar las MAC de la
 ## 2026-09-06 — Fase 1 — Los dos LM35 no funcionan
 
 **Qué se hizo:** primer banco de sensores. Se cableó un LM35Z a GPIO34 (ADC1) alimentado
-desde VIN, y se escribió un sketch de prueba en `prueba_lm35/` que informa promedio, mínimo
+desde VIN, y se escribió un sketch de prueba en `pruebas/lm35/` que informa promedio, mínimo
 y máximo de cada ventana de muestreo.
 
 **Qué se midió:** (multímetro UT890C, punta negra fija en GND del ESP32)
