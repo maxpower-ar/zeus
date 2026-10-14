@@ -37,7 +37,7 @@ si sobra tiempo.
 **Arduino IDE clásico** (no PlatformIO). El repositorio **es el sketchbook**:
 
 > Arduino IDE → Archivo → Preferencias → Ubicación del sketchbook →
-> `C:\Users\Usuario\Documents\Max\estacion_metereologica`
+> la raíz de este repositorio (en la máquina actual, `C:\Users\Max\Documents\Max\zeus`)
 
 Con eso el IDE descubre solo los dos sketches, los de `pruebas/` y la librería compartida en
 `libraries/`.

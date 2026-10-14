@@ -143,11 +143,37 @@ pines producen micro-glitches espurios cuando el ADC hace conversiones. Para lee
 importa, pero acá se están **contando pulsos**: cada glitch se contaría como una ranura y la
 velocidad saldría inflada. Por eso el encoder va a **GPIO18**.
 
-**Contar las ranuras del disco.** El disco en uso es de **30 ranuras**, pero el modelo OpenSCAD
-del rotor impreso (`markii/estacion_anemometro.scad`) tiene `enc_ranuras = 20`. Los dos números
-no coinciden y hay que resolverlo contando a mano antes de calibrar: si el número está mal, toda
-la escala de velocidad queda mal por un factor constante — y es el peor tipo de error, porque las
-lecturas siguen pareciendo razonables. Anotarlo en `hardware/calibraciones/anemometro.md`.
+**Las ranuras del disco son 30**, confirmado contra el modelo OpenSCAD que genera la pieza. Si
+alguna vez se reimprime con otra cantidad hay que cambiarlo en los tres sketches: una diferencia
+ahí desplaza toda la escala de velocidad por un factor constante, y es el peor tipo de error
+porque las lecturas siguen pareciendo razonables.
+
+### Geometría del disco
+
+| Parámetro | Valor |
+|---|---|
+| Diámetro | 69 mm |
+| Espesor | 2 mm |
+| Ranuras | **30** (= pulsos por vuelta) |
+| Banda radial de las ranuras | r = 23.5 a 33.5 mm |
+| Ancho de ranura | 2.4 mm (interior) a 3.5 mm (exterior) |
+| Borde macizo exterior | 1.0 mm |
+
+Las ranuras son trapecios que se ensanchan hacia afuera, siguiendo el crecimiento del perímetro.
+Eso mantiene el ciclo de trabajo en **48.8 % a 49.9 % en toda la banda radial** (el ideal es
+`πr/30`), o sea ranura y diente prácticamente iguales a cualquier radio donde caiga el haz. Con
+anchos de 2.4 a 3.5 mm contra la ranura óptica del FC-03, de alrededor de 1 mm, las transiciones
+salen limpias y cuadradas.
+
+**Dónde montar el sensor:** con el haz en **r ≈ 28.5 mm**, el centro de la banda. Los 10 mm de
+largo radial dan mucha tolerancia de armado, pero no conviene acercarse al borde exterior:
+pasado r = 33.5 mm solo queda 1 mm de disco macizo, y si el disco se comba o queda descentrado
+el haz podría salirse de las ranuras.
+
+**El punto flojo del diseño** es justamente ese borde de 1 mm: es el anillo que mantiene unidos
+a los 30 dientes, y en PLA de 2 mm a 69 mm de diámetro es delicado y propenso a alabearse.
+Conviene controlarlo con una regla de canto apoyada sobre el disco recién impreso. Si se comba,
+subir `enc_margen` a 1.5 o 2 mm cuesta nada: sobra banda radial.
 
 ### Cómo calibrar (fase 3)
 

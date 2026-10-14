@@ -8,25 +8,48 @@ la velocidad de viento.
 
 ---
 
-## 1. Ranuras del disco — PENDIENTE
+## 1. Ranuras del disco — RESUELTO
 
-Hay una diferencia sin resolver:
+**30 ranuras**, confirmado el 2026-10-14 contra el modelo OpenSCAD que genera la pieza
+(`enc_ranuras = 30`). La contradicción anterior con `enc_ranuras = 20` correspondía al
+disco viejo de 36 mm, que quedó obsoleto: con 36 mm no entraban 30 ranuras.
 
-| Fuente | Ranuras |
+| Parámetro | Valor |
 |---|---|
-| Disco en uso (indicado) | **30** |
-| Modelo OpenSCAD del rotor impreso (`markii/estacion_anemometro.scad`, `enc_ranuras`) | **20** |
+| Diámetro | 69 mm |
+| Espesor | 2 mm |
+| Ranuras | **30** |
+| Banda radial de las ranuras | r = 23.5 a 33.5 mm |
+| Ancho de ranura | 2.4 mm (interior) → 3.5 mm (exterior) |
+| Borde macizo exterior | 1.0 mm |
+| Buje | 26 mm, agujero en D de 16 mm, prisionero M3 |
 
-**Hay que contarlas a mano antes de calibrar nada.** Si el disco fuera de 20 y el código
-dijera 30, todas las velocidades saldrían un tercio más bajas, y las lecturas igual
-parecerían razonables: es el error más difícil de detectar de esta fase.
+Ciclo de trabajo verificado: **48.8 % a 49.9 %** en toda la banda radial (ideal `πr/30`).
 
-Procedimiento: sketch `pruebas/encoder_optico`, marcar la rueda, teclear `r`, dar
-**exactamente una vuelta lenta** con el dedo, leer el total.
+Fuente: `hardware/modelos/encoder_disco.scad` (copia de la pieza en el repositorio).
+
+### Verificación física pendiente
+
+Aunque el número sale del modelo que genera la pieza, conviene confirmarlo una vez sobre
+el disco impreso: sketch `pruebas/encoder_optico`, marcar la rueda, teclear `r`, dar una
+vuelta lenta con el dedo, leer el total. Dos minutos.
 
 | Fecha | Ranuras contadas | Quién |
 |---|---|---|
 | | | |
+
+### Montaje del sensor
+
+Haz del FC-03 a **r ≈ 28.5 mm** (centro de la banda). Hay 10 mm de tolerancia radial, pero
+no acercarse al borde: pasado r = 33.5 solo queda 1 mm de disco macizo.
+
+**Control de alabeo:** ese borde de 1 mm es el anillo que mantiene unidos los 30 dientes, y
+en PLA de 2 mm a 69 mm de diámetro es delicado. Apoyar una regla de canto sobre el disco
+recién impreso. Si se comba, subir `enc_margen` a 1.5 o 2 mm no cuesta nada.
+
+| Fecha | Alabeo medido | Radio del haz | Roza? |
+|---|---|---|---|
+| | | | |
 
 ---
 
@@ -35,8 +58,9 @@ Procedimiento: sketch `pruebas/encoder_optico`, marcar la rueda, teclear `r`, da
 | Dato | Valor | Cómo se mide |
 |---|---|---|
 | Radio del rotor | *(pendiente)* | Del centro del eje al centro de una cazoleta, con regla |
-| Diámetro de cazoleta | *(pendiente)* | |
+| Diámetro de cazoleta | *(pendiente, ~50 mm según el STL)* | |
 | Cantidad de cazoletas | 3 | |
+| Rodamientos | 2 × 10×22×6 | |
 
 No hacen falta para medir —la calibración los absorbe a los dos— pero sirven para
 verificar que el resultado tenga sentido físico.

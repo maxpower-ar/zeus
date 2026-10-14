@@ -72,11 +72,11 @@ velocidad de giro.
       bolillas) contra el eje del kit TT: girarlos con el dedo y cronometrar cuánto siguen
       girando solos. Más tiempo de giro libre = menos fricción = detecta brisa más suave.
       Anotar en `hardware/calibraciones/anemometro.md`
-- [ ] **Contar las ranuras del disco** y anotarlo. El disco en uso es de **30 ranuras**, pero
-      el modelo OpenSCAD del rotor impreso (`markii/estacion_anemometro.scad`) tiene
-      `enc_ranuras = 20`: los dos números no coinciden y hay que resolverlo contando a mano.
-      Si el número está mal, toda la escala queda mal por un factor constante y las lecturas
-      igual parecen razonables
+- [x] **Ranuras del disco: 30**, confirmado contra el modelo OpenSCAD que genera la pieza
+      (`enc_ranuras = 30`, disco de 69 mm, ranuras entre r = 23.5 y 33.5 mm)
+- [ ] Posicionar el FC-03 con el haz a **r ≈ 28.5 mm**, el centro de la banda radial de las
+      ranuras. Hay 10 mm de banda, así que sobra tolerancia, pero conviene no acercarse al
+      borde exterior: afuera de r = 33.5 solo queda 1 mm de disco macizo
 - [ ] Medir velocidad en **m/s y km/h** con `pruebas/anemometro/`, que trae el modo de
       calibración contra una referencia conocida
 - [ ] Probar el módulo **a 3.3 V**: si funciona, no hace falta conversor de nivel. Verificar la

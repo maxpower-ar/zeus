@@ -93,13 +93,14 @@
 
 const int PIN_ENCODER = 18;
 
-// Ranuras del disco. Este numero tiene que ser el REAL, contado a mano: si el disco
-// fuera de 20 y aca dijera 30, todas las velocidades saldrian un tercio mas bajas y las
-// lecturas igual pareceran razonables. Es el error mas dificil de detectar de la fase.
-// Para contarlas: sketch pruebas/encoder_optico, tecla 'r', una vuelta lenta a mano.
+// Ranuras del disco = pulsos por vuelta. CONFIRMADO contra el modelo OpenSCAD que
+// genera la pieza (enc_ranuras = 30). El disco es de 69 mm, 2 mm de espesor, con las
+// ranuras entre los radios 23.5 y 33.5 mm.
 //
-// OJO: el modelo OpenSCAD del rotor impreso (markii/estacion_anemometro.scad) tiene
-// enc_ranuras = 20. Si el disco en uso es el impreso con ese modelo, aca van 20.
+// Si alguna vez se reimprime el disco con otra cantidad de ranuras, HAY QUE CAMBIAR
+// este numero: una diferencia aca desplaza toda la escala de velocidad por un factor
+// constante, y las lecturas igual siguen pareciendo razonables. Es el error mas
+// dificil de detectar de esta fase.
 const int RANURAS_POR_VUELTA = 30;
 
 // ---------------------------------------------------------------------------------

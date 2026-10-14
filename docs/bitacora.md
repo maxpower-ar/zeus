@@ -44,6 +44,42 @@ Completar en la fase 0.
 
 ---
 
+## 2026-10-14 — Fase 3 — Ranuras del disco: resuelto, son 30
+
+**Qué se resolvió:** la contradicción anotada más abajo entre 30 y 20 ranuras. El modelo
+OpenSCAD del disco vigente tiene `enc_ranuras = 30`. El `enc_ranuras = 20` correspondía al
+disco viejo de 36 mm, que quedó obsoleto: con 36 mm de diámetro no entran 30 ranuras — el
+diente quedaba en medio milímetro, más angosto que la ranura óptica del FC-03.
+
+El `.scad` del disco se copió a `hardware/modelos/encoder_disco.scad` y queda como fuente
+de verdad de ese número: antes la geometría vivía solo en la carpeta de impresión, fuera
+del repositorio, y el firmware no tenía contra qué verificarse.
+
+**Geometría del disco:** 69 mm de diámetro, 2 mm de espesor, 30 ranuras trapezoidales entre
+los radios 23.5 y 33.5 mm, de 2.4 mm de ancho adentro a 3.5 mm afuera.
+
+**Qué se verificó por cálculo:** el ciclo de trabajo de las ranuras da **48.8 % a 49.9 % en
+toda la banda radial**, contra un ideal de `πr/30`. Los anchos del trapecio siguen el
+crecimiento del perímetro con menos de 2.5 % de desvío en el punto peor. Contra la ranura
+óptica del FC-03, de alrededor de 1 mm, las transiciones salen limpias.
+
+**Dos observaciones para el armado:**
+
+- Los 10 mm de largo radial de las ranuras dan mucha tolerancia para ubicar el sensor.
+  Conviene apuntar el haz a **r ≈ 28.5 mm**, el centro de la banda, y no cerca del borde:
+  pasado r = 33.5 solo queda 1 mm de disco macizo.
+- Ese borde de 1 mm es el anillo que mantiene unidos los 30 dientes. En PLA de 2 mm a 69 mm
+  de diámetro es delicado y propenso a alabearse. Control con regla de canto sobre el disco
+  recién impreso; si se comba, subir `enc_margen` a 1.5 o 2 mm no cuesta nada porque sobra
+  banda radial.
+
+**Qué no cambia:** el firmware. `RANURAS_POR_VUELTA = 30` ya estaba bien; se reemplazaron
+las advertencias de contradicción por la geometría confirmada.
+
+**Pendiente:** medir el radio del rotor con regla, y calibrar `metrosPorPulso`.
+
+---
+
 ## 2026-10-14 — Fase 3 — Anemómetro: velocidad en m/s y km/h
 
 **Qué se hizo:** se escribió `pruebas/anemometro/`, que imprime velocidad del viento en m/s y

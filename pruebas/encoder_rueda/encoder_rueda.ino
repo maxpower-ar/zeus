@@ -41,8 +41,7 @@
 
   Mandar 'r' + Enter pone el contador total en cero.
 
-  OJO CON EL NUMERO DE RANURAS: ver RANURAS_POR_VUELTA abajo, hay una diferencia sin
-  resolver entre el disco en uso y el modelo 3D.
+  El disco es de 30 ranuras, confirmado contra el modelo OpenSCAD que genera la pieza.
 
   Y vueltas por minuto NO es velocidad del viento: para pasar de una cosa a la otra
   hace falta calibrar contra una referencia conocida. Eso lo hace pruebas/anemometro,
@@ -52,11 +51,14 @@
 
 const int PIN_ENCODER = 18;
 
-// Disco de 30 ranuras. Verificarlo con el sketch pruebas/encoder_optico (tecla 'r' y
-// una vuelta lenta a mano): el modelo OpenSCAD del rotor impreso tiene enc_ranuras =
-// 20, asi que los dos numeros no coinciden y hay que saber cual es el disco en uso.
-// Si el disco fuera de 20 y aca dijera 30, las vueltas/min saldrian un tercio bajas y
-// las lecturas igual pareceran razonables.
+// Ranuras del disco = pulsos por vuelta. CONFIRMADO contra el modelo OpenSCAD que
+// genera la pieza (enc_ranuras = 30). El disco es de 69 mm, 2 mm de espesor, con las
+// ranuras entre los radios 23.5 y 33.5 mm.
+//
+// Si alguna vez se reimprime el disco con otra cantidad de ranuras, HAY QUE CAMBIAR
+// este numero: una diferencia aca desplaza toda la escala de velocidad por un factor
+// constante, y las lecturas igual siguen pareciendo razonables. Es el error mas
+// dificil de detectar de esta fase.
 const int RANURAS_POR_VUELTA = 30;
 
 // Dos flancos mas juntos que esto no pueden ser dos ranuras distintas: es ruido o un
