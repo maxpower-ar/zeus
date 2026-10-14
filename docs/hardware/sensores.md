@@ -106,15 +106,15 @@ es proporcional a la velocidad de giro, y esta a la del viento.
 | | Motor DC | Imán + Hall | **Encoder óptico** |
 |---|---|---|---|
 | Fricción que agrega al eje | Escobillas (mucha) | Ninguna | **Ninguna** |
-| Pulsos por vuelta | — | 1 o 2 | **~20** |
+| Pulsos por vuelta | — | 1 o 2 | **30** |
 | Umbral de arranque | 8-15 km/h | 2-4 km/h | **2-4 km/h** |
 | Señal | Analógica, ruidosa | Digital | **Digital, con histéresis** |
 | Depende del ADC | Sí | No | **No** |
 | Hay que comprar | — | Un sensor Hall | **Nada** |
 
 Lo decisivo es la **resolución a viento bajo**. Con un imán y un Hall, una vuelta lenta da un
-pulso cada dos segundos y hay que esperar mucho para saber la velocidad. Con 20 ranuras, esa
-misma vuelta entrega 20 pulsos y la medición sale en una fracción de segundo.
+pulso cada dos segundos y hay que esperar mucho para saber la velocidad. Con 30 ranuras, esa
+misma vuelta entrega 30 pulsos y la medición sale en una fracción de segundo.
 
 Al ser óptico y sin contacto, no agrega **nada** de fricción: el umbral de arranque queda
 determinado únicamente por el rodamiento que se use en el eje.
@@ -143,10 +143,11 @@ pines producen micro-glitches espurios cuando el ADC hace conversiones. Para lee
 importa, pero acá se están **contando pulsos**: cada glitch se contaría como una ranura y la
 velocidad saldría inflada. Por eso el encoder va a **GPIO18**.
 
-**Contar las ranuras del disco.** Se asume que son 20 porque es lo habitual en los kits de motor
-TT, pero también hay discos de 12 y de 24. Si el número está mal, toda la escala de velocidad
-queda mal por un factor constante — y es el peor tipo de error, porque las lecturas siguen
-pareciendo razonables. Contarlas a ojo y anotarlas en `hardware/calibraciones/anemometro.md`.
+**Contar las ranuras del disco.** El disco en uso es de **30 ranuras**, pero el modelo OpenSCAD
+del rotor impreso (`markii/estacion_anemometro.scad`) tiene `enc_ranuras = 20`. Los dos números
+no coinciden y hay que resolverlo contando a mano antes de calibrar: si el número está mal, toda
+la escala de velocidad queda mal por un factor constante — y es el peor tipo de error, porque las
+lecturas siguen pareciendo razonables. Anotarlo en `hardware/calibraciones/anemometro.md`.
 
 ### Cómo calibrar (fase 3)
 
@@ -156,13 +157,32 @@ viento**, típicamente entre 2.5 y 3 veces más lento, según la geometría del 
 La ventaja frente al motor DC es que ahora se calibra **una sola constante**, no una curva:
 
 ```
-velocidad_viento = K · (pulsos_por_segundo / ranuras_por_vuelta) · circunferencia
+velocidad [m/s]  = metrosPorPulso · pulsos_por_segundo
+velocidad [km/h] = velocidad [m/s] · 3.6
 ```
 
-Sin túnel de viento, el método práctico es el auto: el anemómetro por la ventanilla, el vehículo
-a velocidad constante, y anotar la frecuencia de pulsos a 20, 30, 40 y 50 km/h. Como la relación
-es lineal, la recta que pasa por esos puntos da `K`. Después se contrasta con lo que informa el
-servicio meteorológico local en un día ventoso.
+donde `metrosPorPulso = K · 2π · radio / ranuras_por_vuelta`.
+
+**El factor `K` y el radio no se miden por separado.** No hace falta, y además no se puede con
+precisión: lo que se mide de una sola vez es su producto, que es exactamente lo que vale
+`metrosPorPulso`. Una constante, un experimento.
+
+La conversión entre m/s y km/h es **exacta** y no depende de ninguna calibración. Si los km/h
+están mal, los m/s están igual de mal: el error estaría en `metrosPorPulso`. El firmware imprime
+las dos unidades solo por comodidad — m/s para las pruebas y el contraste con literatura
+técnica, km/h para leerlo de un vistazo.
+
+Sin túnel de viento, el método práctico es el auto: el anemómetro firme fuera de la ventanilla y
+lo más lejos posible de la carrocería (el aire pegado al auto va más lento que el auto), camino
+recto, día sin viento, a 20, 30, 40 y 50 km/h. **Cada velocidad se hace de ida y de vuelta y se
+promedia**: si hay aunque sea poco viento, de ida se suma y de vuelta se resta, y promediando se
+cancela. Los cuatro valores tienen que dar parecidos entre sí; si no, hay algo mal en el montaje.
+
+El sketch `pruebas/anemometro/` trae el modo de calibración incorporado: se teclea `c 40` con el
+auto a 40 km/h y devuelve la constante ya calculada. Los resultados van a
+`hardware/calibraciones/anemometro.md`.
+
+Después se contrasta con lo que informa el servicio meteorológico local en un día ventoso.
 
 ---
 

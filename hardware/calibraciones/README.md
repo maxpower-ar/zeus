@@ -12,7 +12,7 @@ dice explícitamente que es provisional.
 |---|---|---|
 | `lm35.md` | 1 | Desvío de cada LM35 contra el UT890C, a varias temperaturas |
 | `dht22.md` | 1 | Contraste del DHT22 contra el multímetro |
-| `anemometro.md` | 3 | Tabla tensión → km/h y velocidad de arranque del motor |
+| `anemometro.md` | 3 | Ranuras del disco, constante `metrosPorPulso`, velocidad de arranque |
 | `veleta.md` | 2 | Qué pin corresponde a qué rumbo, y polaridad del imán |
 | `bme280.md` | 4 | Presión leída contra la del servicio meteorológico, y altitud del lugar |
 | `gas.md` | 4 | Línea de base en aire limpio, tras el precalentamiento |

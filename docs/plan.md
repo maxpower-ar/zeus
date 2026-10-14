@@ -72,8 +72,13 @@ velocidad de giro.
       bolillas) contra el eje del kit TT: girarlos con el dedo y cronometrar cuánto siguen
       girando solos. Más tiempo de giro libre = menos fricción = detecta brisa más suave.
       Anotar en `hardware/calibraciones/anemometro.md`
-- [ ] **Contar las ranuras del disco** y anotarlo (se asumen 20, pero hay de 12 y de 24; si el
-      número está mal, toda la escala queda mal por un factor constante)
+- [ ] **Contar las ranuras del disco** y anotarlo. El disco en uso es de **30 ranuras**, pero
+      el modelo OpenSCAD del rotor impreso (`markii/estacion_anemometro.scad`) tiene
+      `enc_ranuras = 20`: los dos números no coinciden y hay que resolverlo contando a mano.
+      Si el número está mal, toda la escala queda mal por un factor constante y las lecturas
+      igual parecen razonables
+- [ ] Medir velocidad en **m/s y km/h** con `pruebas/anemometro/`, que trae el modo de
+      calibración contra una referencia conocida
 - [ ] Probar el módulo **a 3.3 V**: si funciona, no hace falta conversor de nivel. Verificar la
       tensión de salida con el UT890C antes de conectarlo al ESP32
 - [ ] Contar pulsos con interrupción en **GPIO18** (nunca en GPIO36 ni 39: producen glitches

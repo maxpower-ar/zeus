@@ -44,6 +44,38 @@ Completar en la fase 0.
 
 ---
 
+## 2026-10-14 — Fase 3 — Anemómetro: velocidad en m/s y km/h
+
+**Qué se hizo:** se escribió `pruebas/anemometro/`, que imprime velocidad del viento en m/s y
+km/h además de vueltas por minuto, con modo de calibración incorporado (tecla `c <km/h>`). Se
+pasaron `pruebas/encoder_optico` y `pruebas/encoder_rueda` a 30 ranuras. Se creó la ficha
+`hardware/calibraciones/anemometro.md` con las tablas vacías a completar.
+
+**Decisión de diseño — una sola constante de calibración.** El radio del rotor y el factor del
+anemómetro (las cazoletas giran 2.5 a 3 veces más lento que el viento) no se miden por separado:
+no hace falta y no se puede con precisión. Lo que se mide de una vez es su producto,
+`metrosPorPulso`, con el que `velocidad [m/s] = metrosPorPulso × pulsos_por_segundo`. Un solo
+número, un solo experimento.
+
+La conversión m/s → km/h es ×3.6 exacto y no es una calibración. Se imprimen las dos unidades
+por comodidad: m/s para las pruebas, km/h para leerlo de un vistazo.
+
+**Contradicción detectada, sin resolver:** el disco en uso es de **30 ranuras**, pero el modelo
+OpenSCAD del rotor impreso (`markii/estacion_anemometro.scad`) tiene `enc_ranuras = 20`. Si el
+disco real fuera de 20 y el código dijera 30, todas las velocidades saldrían un tercio más bajas
+y las lecturas igual parecerían razonables. **Hay que contarlas a mano antes de calibrar.**
+
+**Estado del rotor:** 3 cazoletas sobre rulemanes 10×22×6 (no se usó el cooler Jamicon).
+
+**Pendiente para la próxima:**
+
+1. Contar las ranuras del disco (sketch `encoder_optico`, tecla `r`, una vuelta lenta)
+2. Medir el radio del rotor con regla, del centro del eje al centro de una cazoleta
+3. Calibrar `metrosPorPulso` con el método del auto, ida y vuelta a 20/30/40/50 km/h
+4. Medir la velocidad de arranque del rotor
+
+---
+
 ## 2026-09-06 — Fase 1 — DHT22 verificado en banco
 
 **Qué se hizo:** se conectó el DHT22 a GPIO4 (VCC a 3.3 V, DATA a GPIO4, GND común) y se
