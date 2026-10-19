@@ -91,7 +91,7 @@ void IRAM_ATTR contarPulso() {
 
   periodoUs = transcurrido;
   ultimoPulsoUs = ahora;
-  pulsosTotales++;
+  pulsosTotales = pulsosTotales + 1;
 }
 
 void setup() {

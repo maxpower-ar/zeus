@@ -94,12 +94,12 @@ void IRAM_ATTR contarPulso() {
   unsigned long ahora = micros();
 
   if (ahora - ultimoPulsoUs < ANTIRREBOTE_US) {
-    descartadosTotales++;  // rebote o ruido: no puede ser una ranura distinta
+    descartadosTotales = descartadosTotales + 1;  // rebote o ruido: no puede ser una ranura distinta
     return;
   }
 
   ultimoPulsoUs = ahora;
-  pulsosTotales++;
+  pulsosTotales = pulsosTotales + 1;
 }
 
 void ponerEnCero() {
