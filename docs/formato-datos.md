@@ -8,26 +8,32 @@ discrepa con este documento, manda el código y hay que corregir el documento.
 
 ## El registro: `Medicion`
 
+> **Versión en uso (2026-11-22):** `libraries/EstacionComun/src/Medicion.h` usa `float`
+> (32 bytes) en vez de los enteros de la tabla de abajo: un dato faltante se guarda como
+> `NAN`, igual que viaja al servidor. La versión compacta queda para si el espacio no alcanza.
+
+
 Un registro de **tamaño fijo**. Que sea fijo no es un detalle: permite calcular la posición de
 cualquier registro en el archivo con una multiplicación, sin recorrerlo, y hace trivial el log
 circular de la fase 6.
 
 | Campo | Tipo | Bytes | Unidad | Nota |
 |---|---|---|---|---|
-| `timestamp` | `uint32_t` | 4 | segundos | Época Unix, del DS3231 |
+| `timestamp` | `uint32_t` | 4 | segundos | Época Unix, de NTP (DS3231 de respaldo) |
 | `tempDht` | `int16_t` | 2 | 0.1 °C | 235 = 23.5 °C |
 | `humDht` | `uint16_t` | 2 | 0.1 % | 604 = 60.4 % |
-| `tempLm35A` | `int16_t` | 2 | 0.1 °C | |
-| `tempLm35B` | `int16_t` | 2 | 0.1 °C | |
 | `tempBme` | `int16_t` | 2 | 0.1 °C | |
 | `presion` | `uint32_t` | 4 | Pa | 101325 Pa = 1013.25 hPa |
 | `vientoVel` | `uint16_t` | 2 | 0.1 km/h | |
-| `vientoDir` | `uint8_t` | 1 | rumbo | 0=N, 1=NE … 7=NO, 255=inválido |
+| `vientoDir` | `uint8_t` | 1 | rumbo | 0=N, 1=NE … 7=NO, 255=inválido. Sensor postergado |
 | `gas` | `uint16_t` | 2 | crudo | Lectura del ADC o ppm según sensor |
+| `luminosidad` | `uint32_t` | 4 | lux | Sin sensor todavía. 32 bits: al sol pleno supera los 65 535 lux |
 | `vbat` | `uint16_t` | 2 | mV | Fase opcional B; 0 si no se mide |
 | `validez` | `uint8_t` | 1 | banderas | Ver abajo |
 | `crc` | `uint8_t` | 1 | — | CRC-8 de los bytes anteriores |
-| **Total** | | **27** | | Puede quedar en 28 por alineación |
+| **Total** | | **23** | | Puede quedar en 24 por alineación |
+
+> Los dos LM35 se descartaron (bitácora 2026-09-06) y sus campos se quitaron.
 
 ### Por qué enteros y no `float`
 
@@ -47,8 +53,8 @@ graficarse ni promediarse.
 | Bit | Sensor |
 |---|---|
 | 0 | DHT22 |
-| 1 | LM35 #1 |
-| 2 | LM35 #2 |
+| 1 | *(libre, era LM35 #1)* |
+| 2 | *(libre, era LM35 #2)* |
 | 3 | BME280 |
 | 4 | Anemómetro |
 | 5 | Veleta |
@@ -62,44 +68,46 @@ cosas.
 
 ### El campo `crc`
 
-Un CRC-8 sobre los 26 bytes anteriores del registro, calculado al guardar y verificado al leer.
-Detecta corrupción en la flash y errores de transmisión por radio. Un registro con CRC
+Un CRC-8 sobre los bytes anteriores del registro, calculado al guardar y verificado al leer.
+Detecta corrupción en la flash. Un registro con CRC
 incorrecto se descarta y se reporta; no se entrega como si fuera bueno.
 
 ---
 
-## El archivo de log (nodo de campo)
+## El archivo de log
 
 Archivo binario en LittleFS, formado por registros consecutivos de tamaño fijo:
 
 ```
 ┌──────────┬───────────┬───────────┬─────┬───────────┐
 │ Cabecera │ Registro0 │ Registro1 │ ... │ RegistroN │
-│  16 B    │   27 B    │   27 B    │     │   27 B    │
+│  16 B    │   23 B    │   23 B    │     │   23 B    │
 └──────────┴───────────┴───────────┴─────┴───────────┘
 ```
 
 La cabecera guarda una **firma** (para reconocer el archivo), la **versión del formato** (para
-que un cambio futuro no haga ilegible lo viejo sin avisar), la **cantidad de registros** y el
-**índice de escritura** del log circular.
+que un cambio futuro no haga ilegible lo viejo sin avisar), la **cantidad de registros**, el
+**índice de escritura** del log circular y el **índice de envío**: el último registro que el
+servidor confirmó haber recibido. Todo lo que está entre el índice de envío y el de escritura
+está **pendiente** y se manda cuando vuelve la red.
 
 ### Log circular
 
 Cuando el archivo llega al máximo, el registro nuevo pisa al **más viejo**. La estación nunca
 se queda sin espacio ni deja de medir: simplemente pierde el pasado más lejano.
 
-Es la decisión correcta para una estación que puede pasar semanas sin que la descarguen —
-preferimos perder lo de hace tres meses antes que dejar de registrar lo de hoy.
+Es la decisión correcta para una estación que puede pasar semanas sin red — preferimos perder
+lo de hace tres meses antes que dejar de registrar lo de hoy.
 
 ### Capacidad estimada
 
-Con una partición LittleFS de unos 1.5 MB y registros de 27 bytes:
+Con una partición LittleFS de unos 1.5 MB y registros de 23 bytes:
 
-| Intervalo de muestreo | Registros que entran | Autonomía |
+| Intervalo de muestreo | Registros que entran | Autonomía sin red |
 |---|---|---|
-| 1 minuto | ~55 000 | ~38 días |
-| 5 minutos | ~55 000 | ~190 días |
-| 15 minutos | ~55 000 | ~570 días |
+| 1 minuto | ~65 000 | ~45 días |
+| 5 minutos | ~65 000 | ~225 días |
+| 15 minutos | ~65 000 | ~680 días |
 
 **Cinco minutos es el intervalo propuesto:** más de seis meses de historia, y resolución de
 sobra para el clima, que no cambia significativamente en menos de eso.
@@ -108,28 +116,11 @@ Este cálculo debe **confirmarse en la fase 6** con el tamaño real de la partic
 
 ---
 
-## Salida a la PC (fase 9)
+## Envío al servidor (fases 8 a 10)
 
-Por el puerto serie del nodo interfaz, a **115200 baudios**. Formato **CSV** con encabezado,
-una línea por medición:
+Cada registro se traduce a una línea de texto y se manda por WiFi a la API del ITR. El formato
+de esa línea, lo acordado y lo pendiente están en [`servidor.md`](servidor.md).
 
-```
-fecha_hora,temp_dht,hum_dht,temp_lm35a,temp_lm35b,temp_bme,presion_hpa,viento_kmh,viento_dir,gas,validez
-2026-09-05T14:30:00,23.5,60.4,23.8,23.1,23.6,1013.2,12.4,NE,320,0xFF
-2026-09-05T14:35:00,23.7,60.1,,23.3,23.8,1013.1,14.0,NE,318,0xFD
-```
-
-Reglas del formato:
-
-- **Fecha y hora en ISO 8601** (`AAAA-MM-DDTHH:MM:SS`): se ordena alfabéticamente igual que
-  cronológicamente, y toda planilla de cálculo lo entiende
-- **Los valores ya vienen convertidos** a unidades legibles (grados, hPa, km/h): la división
-  por 10 se hace acá, no la tiene que hacer quien lea el archivo
-- **La dirección del viento va como texto** (`NE`), no como número
-- **Un campo inválido queda vacío**, no en cero. En el ejemplo, la segunda línea tiene el
-  DHT22 caído: su temperatura y humedad están vacías y el bit 0 de `validez` está en 0
-- **La columna `validez` se conserva** en hexadecimal, para poder diagnosticar después qué pasó
-
-Que un campo vacío sea distinto de un cero es la misma decisión del byte `validez`, sostenida
-hasta el final de la cadena: una planilla de cálculo dibuja una interrupción en la línea del
-gráfico donde el dato falta, y un cero dibujaría una caída de temperatura que nunca ocurrió.
+La traducción respeta la misma regla del byte `validez`: **un campo inválido se manda como
+`NaN`**, nunca como cero. Un cero dibujaría en un gráfico una caída de temperatura que nunca
+ocurrió.

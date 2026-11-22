@@ -6,8 +6,12 @@ probar y ver funcionar** — nunca se escribe todo para probar al final.
 Marcá la casilla cuando la fase esté terminada **y verificada sobre la placa**, no cuando el
 código compile.
 
-El plan tiene dos partes: el **núcleo** (fases 0–9), que es el proyecto completo y entregable,
+El plan tiene dos partes: el **núcleo** (fases 0–10), que es el proyecto completo y entregable,
 y las **fases opcionales**, que solo se abordan una vez terminado el núcleo.
+
+> **Cambio de arquitectura (2026-10-27):** el proyecto pasó de dos nodos con ESP-NOW a **un
+> solo ESP32 ("Delta") que manda los datos por WiFi a un servidor del ITR**. Las fases 7 a 9
+> se reescribieron y la veleta (fase 2) se posterga. Ver la bitácora de esa fecha.
 
 ---
 
@@ -18,12 +22,12 @@ y las **fases opcionales**, que solo se abordan una vez terminado el núcleo.
 
 - [ ] Instalar Arduino IDE y el soporte para placas ESP32
 - [ ] Configurar la ubicación del sketchbook apuntando a este repositorio
-- [ ] Crear los dos sketches vacíos (`estacion_campo`, `estacion_interfaz`) y compilarlos
-- [ ] Subir un parpadeo de LED a **ambas** placas y confirmar que las dos funcionan
-- [ ] Imprimir por serie la **dirección MAC** de cada placa y anotarla en `docs/bitacora.md`
-      (la vamos a necesitar en la fase 7 para el enlace ESP-NOW)
+- [ ] Crear el sketch `estacion_campo` y compilarlo
+- [ ] Subir un parpadeo de LED a la placa Delta y confirmar que funciona
+- [ ] Imprimir por serie la **dirección MAC** y anotarla en `docs/bitacora.md`
+      (puede pedirla el área de sistemas del ITR para autorizar la placa en la red WiFi)
 
-**Verificación:** las dos placas parpadean y cada una informa su MAC por el monitor serie a 115200.
+**Verificación:** la placa parpadea e informa su MAC por el monitor serie a 115200.
 
 ---
 
@@ -46,8 +50,9 @@ y las **fases opcionales**, que solo se abordan una vez terminado el núcleo.
 
 ---
 
-### Fase 2 — Veleta de 8 rumbos
-> Sin componentes nuevos. 8 × Hall A3144 + conversor de nivel.
+### Fase 2 — Veleta de 8 rumbos — **POSTERGADA**
+> Se rediseña con sensores Hall más adelante (ver fase opcional E). Mientras tanto el campo
+> `direccion` se envía como `NaN`. Lo de abajo queda como referencia del diseño original.
 
 - [ ] Un solo Hall funcionando: acercar un imán y ver el cambio en el serie
 - [ ] Determinar la **polaridad** del imán que activa al A3144 (es unipolar: responde a una
@@ -122,9 +127,10 @@ tabla ajena.
 ---
 
 ### Fase 4 — Sensores nuevos: presión, gas y reloj
-> Requiere comprar BME280, sensor de gas y DS3231.
+> Requiere comprar BME280, sensor de gas y DS3231. El DS3231 ahora es **respaldo** de la hora
+> NTP (fase 7): da la hora cuando la placa arranca sin red.
 
-- [ ] Escanear el bus I²C y ver las tres direcciones (BME280 0x76, DS3231 0x68, OLED 0x3C)
+- [ ] Escanear el bus I²C y ver las direcciones (BME280 0x76, DS3231 0x68)
 - [ ] BME280 entregando presión, temperatura y humedad
 - [ ] Comparar la presión con la del servicio meteorológico local (corregida por altitud)
 - [ ] DS3231 con la hora puesta y conservándola tras desenchufar la placa
@@ -139,7 +145,7 @@ tabla ajena.
 
 - [ ] Definir el struct `Medicion` en `libraries/EstacionComun/`
 - [ ] Un ciclo de muestreo que lee **todos** los sensores y arma un `Medicion` completo
-- [ ] Marca de tiempo del RTC en cada medición
+- [ ] Marca de tiempo en cada medición (RTC por ahora; NTP desde la fase 7)
 - [ ] Campo de banderas de validez: qué sensores respondieron bien en ese ciclo
 - [ ] Intervalo de muestreo configurable desde `config.h`
 
@@ -150,58 +156,89 @@ tabla ajena.
 ### Fase 6 — Persistencia en la memoria del nodo
 > Sin componentes nuevos. LittleFS en la flash interna.
 
+Ahora el log cumple otra función: es el **buffer** que guarda las mediciones mientras no hay
+red, para mandarlas cuando vuelva (fase 9).
+
+**Adelantado a pedido (2026-11-22)** junto con la fase 9, como prueba de concepto en
+`pruebas/registro_y_envio/` (registro circular con contadores `escritas`/`enviadas` y CRC por
+medición). Compila; falta probarlo en la placa.
+
 - [ ] Formatear y montar LittleFS
 - [ ] Escribir cada `Medicion` al archivo de log en formato binario de tamaño fijo
 - [ ] Log **circular**: cuando se llena, el registro más viejo cede lugar al más nuevo
 - [ ] Leer el histórico de vuelta y verificar que no se corrompió
 - [ ] Calcular y documentar cuántos días de autonomía de almacenamiento da
+- [ ] Guardar en la cabecera el **índice de envío**: hasta qué registro confirmó el servidor
 
 **Verificación:** se corta la alimentación, vuelve, y el histórico anterior sigue intacto.
 
 ---
 
-### Fase 7 — Enlace por radio entre los dos nodos
-> Sin componentes nuevos. ESP-NOW.
+### Fase 7 — WiFi y hora por NTP
+> Sin componentes nuevos. Requiere saber qué red WiFi se va a usar.
 
-- [ ] Definir el formato de paquete en `libraries/EstacionComun/`
-- [ ] Emparejar los dos nodos por sus MAC
-- [ ] El nodo interfaz envía "dame la medición actual" y el de campo responde
-- [ ] Verificación de integridad (CRC) en cada paquete
-- [ ] Manejar la falta de respuesta: reintentos y un mensaje claro de "nodo no encontrado"
-- [ ] Medir el **alcance real** en el lugar donde va a estar instalada
+- [ ] **Averiguar con sistemas del ITR** qué tipo de red hay: WPA2 con contraseña común (la
+      fácil), WPA2-Enterprise (usuario y contraseña personales) o portal cautivo (página de
+      login). Con portal cautivo el ESP32 prácticamente no puede conectarse: hace falta un
+      router propio o una red aparte para dispositivos
+- [ ] Probar en `pruebas/wifi/` que la placa se conecta e imprime su IP
+- [ ] **Reconexión automática**: desenchufar el router y volver a enchufarlo; la placa se
+      reconecta sola sin reiniciarse
+- [ ] Hora por **NTP**, en hora de Argentina (UTC−3)
+- [ ] Sincronizar el DS3231 desde NTP; al arrancar sin red, tomar la hora del DS3231
+- [ ] Las credenciales WiFi van en un archivo que **no se sube a GitHub** (`secretos.h`, en el
+      `.gitignore`)
 
-**Verificación:** apretás un botón en el nodo interfaz y aparece la medición actual del campo.
-
----
-
-### Fase 8 — Descarga del histórico
-> Sin componentes nuevos. Es la fase más difícil del proyecto.
-
-- [ ] Comando "cuántos registros tenés" y respuesta con el total
-- [ ] Descarga por bloques con numeración de secuencia
-- [ ] Confirmación (ACK) por bloque y reenvío de los que se perdieron
-- [ ] Detección de huecos: la descarga falla ruidosamente antes que entregar datos incompletos
-- [ ] Descarga incremental: pedir solo lo posterior al último registro ya bajado
-- [ ] Prueba con el log lleno de miles de registros
-
-**Verificación:** se descargan miles de registros, se cuentan, y coinciden exactamente con los
-que el nodo de campo dijo tener.
+**Verificación:** con la red cortada la estación sigue midiendo con la hora correcta, y al
+volver la red se reconecta sola.
 
 ---
 
-### Fase 9 — Salida a la computadora
+### Fase 8 — Envío a nuestro servidor (Google Sheets)
+> Sin componentes nuevos. Contrato en `docs/servidor.md`, servidor en `servidor/`.
+
+**Adelantado a pedido (2026-11-10)** como prueba de concepto en `pruebas/envio_sheets/`, con
+el DHT22. Falta integrarlo al firmware una vez hechas las fases 5 y 6.
+
+- [ ] Instalar el servidor de Google Sheets siguiendo `servidor/LEEME.md`, y probarlo con
+      `probarGuardado` y con `curl` desde la PC
+- [x] Función que arma la línea `[fecha;hora;codigo;...;EOF]`, con `NaN` en los datos
+      inválidos (`LineaServidor` en `EstacionComun`) *(escrita y compilada, falta probar en placa)*
+- [x] `pruebas/envio_sheets/` manda una medición por minuto y aparece en la planilla
+- [ ] Una medición solo se marca como enviada cuando el servidor responde `OK`
+- [ ] Integrarlo al firmware, armando la línea a partir del `Medicion`
+
+**Verificación:** la planilla muestra una fila por medición, en la pestaña del mes, con el
+formato exacto de `docs/servidor.md`.
+
+---
+
+### Fase 9 — Cortes de red sin perder datos
 > Sin componentes nuevos.
 
-- [ ] Formato de salida por puerto serie definido y documentado en `docs/formato-datos.md`
-- [ ] Una línea CSV por medición, con encabezado
-- [ ] Los datos inválidos se distinguen de los válidos (no se disfrazan de cero)
-- [ ] Script de prueba en `tools/` que lee el puerto y guarda un archivo
-- [ ] Abrir el archivo resultante en una planilla de cálculo y graficarlo
+- [ ] Sin red, las mediciones quedan pendientes en el log
+- [ ] Al volver la red, se mandan las pendientes **en orden** antes que las nuevas
+- [ ] Si el servidor no responde, reintentar más tarde sin trabar el muestreo
+- [ ] Prueba: cortar la red una hora y verificar que llegan todas las mediciones de esa hora,
+      sin huecos y sin duplicados
 
-**Verificación:** un archivo CSV abierto en una planilla, con un gráfico de temperatura contra
-tiempo que tenga sentido.
+**Verificación:** después del corte, la planilla tiene exactamente las mismas mediciones que
+la estación registró.
 
-**Con la fase 9 terminada, el proyecto está completo y es presentable.**
+---
+
+### Fase 10 — Integración con el servidor del ITR
+> Requiere el contrato cerrado con el equipo de software.
+
+- [ ] Cerrar con el equipo de software todo lo pendiente de `docs/servidor.md`
+- [ ] Envío por **HTTPS** validando el certificado del servidor
+- [ ] Revisar el código del servidor del ITR y comparar con nuestro servidor de Google Sheets
+- [ ] Prueba de varios días seguidos contra el servidor real
+
+**Verificación:** los datos de varios días aparecen en el servidor del ITR y coinciden con el
+log de la estación.
+
+**Con la fase 10 terminada, el proyecto está completo y es presentable.**
 
 ---
 
@@ -214,9 +251,8 @@ y lo que cuestan.
 ### Fase A (opcional) — Display OLED y navegación por botones
 > Requiere: OLED I²C y botones (ya disponibles).
 
-Pantalla en el nodo interfaz para ver el estado y operar sin PC: medición actual, cantidad de
-registros almacenados, estado del enlace, y un menú de tres botones (arriba / abajo / OK) para
-disparar la descarga.
+Pantalla en la estación para ver el estado sin PC: medición actual, registros pendientes de
+envío, estado del WiFi y del servidor, y un menú de tres botones (arriba / abajo / OK).
 
 Es la más agradecida de las opcionales: mejora mucho la demostración del proyecto y es de
 dificultad baja. Si sobra tiempo, hacer esta primero.
@@ -224,12 +260,13 @@ dificultad baja. Si sobra tiempo, hacer esta primero.
 - [ ] OLED mostrando la medición actual
 - [ ] Tres botones con `INPUT_PULLUP` y antirrebote
 - [ ] Menú de navegación
-- [ ] Indicador de estado del enlace con el nodo de campo
+- [ ] Indicador de estado del WiFi y del último envío
 
 ### Fase B (opcional) — Ahorro de energía y deep-sleep
 > Requiere: nada nuevo, pero cambia la estructura del firmware de campo.
 
-Dormir entre mediciones para que la batería dure días en lugar de horas.
+Dormir entre mediciones para que la batería dure días en lugar de horas. Con WiFi pesa más:
+el WiFi encendido consume bastante, y reconectarse en cada ciclo lleva varios segundos.
 
 **Se difiere a propósito:** el deep-sleep reinicia el ESP32 en cada ciclo, lo que complica la
 depuración de todo lo demás (se pierden las variables, el monitor serie se desconecta, los
@@ -267,12 +304,27 @@ Lo que separa un prototipo de banco de una estación que sobrevive a la lluvia.
 - [ ] Caja estanca y pasacables
 - [ ] Prueba de varios días continuos
 
-### Fase E (opcional) — Alcance largo con LoRa
-> Requiere comprar: 2 × módulo LoRa SX1276.
+### Fase E (opcional) — Dirección del viento con sensores Hall
+> Requiere: imán de neodimio y los A3144 disponibles.
 
-Si el nodo de campo termina quedando a más de ~150 metros, ESP-NOW no alcanza. La capa de
-transporte está detrás de una interfaz (`enviar` / `recibir`) justamente para poder cambiar la
-radio sin reescribir el protocolo ni el almacenamiento.
+Retoma la fase 2 con el diseño que se defina. Un solo A3144 detecta si el imán está o no
+enfrente, pero no hacia dónde apunta: para dar un rumbo hacen falta varios Hall en círculo (como
+en la fase 2) o un sensor Hall lineal.
+
+- [ ] Definir el diseño y anotarlo en la bitácora
+- [ ] Reemplazar el `NaN` del campo `direccion` por el rumbo
+
+### Fase F (opcional) — Pluviómetro de balancín
+> Requiere: un A3144 (disponible), un imán y el balancín impreso en 3D.
+
+Un recipiente con dos cucharas que se vuelca cada vez que junta un volumen fijo de agua. Un
+imán en el balancín pasa frente a un Hall y cada vuelco es un pulso, igual que el anemómetro.
+Pulsos × milímetros por vuelco = lluvia caída. Hace falta un campo nuevo en el formato.
+
+- [ ] Imprimir el balancín y calibrar los milímetros por vuelco con una jeringa (volumen
+      conocido dividido por el área de la boca)
+- [ ] Contar vuelcos con interrupción y antirrebote
+- [ ] Acordar el campo con el equipo de software
 
 ---
 

@@ -1,17 +1,8 @@
-# Nodo interfaz
+# Nodo interfaz — RETIRADO
 
-Firmware del ESP32 conectado por USB a la computadora. Es un **puente**: traduce comandos del
-puerto serie a paquetes ESP-NOW hacia el nodo de campo, y las respuestas de vuelta.
+**Este nodo (placa "Beta") se retiró del proyecto el 2026-10-27.** Los datos ya no pasan por un
+puente USB: la estación los manda directo por WiFi a un servidor del ITR (ver
+`docs/servidor.md`).
 
-No guarda datos ni los interpreta.
-
-**Todavía vacío.** El sketch se crea en la **fase 0** del plan (`docs/plan.md`).
-
-## Archivos previstos
-
-| Archivo | Fase | Responsabilidad |
-|---|---|---|
-| `estacion_interfaz.ino` | 0 | Arranque y bucle principal |
-| `config.h` | 0 | Pines de botones y OLED, MAC del nodo de campo |
-| `comandos.h/.cpp` | 7-9 | Comandos de texto del puerto serie |
-| `pantalla.h/.cpp` | opcional A | OLED y menú de botones |
+Se conserva solo el sketch de la fase 0 (parpadeo y MAC) como referencia. No escribir código
+nuevo acá.

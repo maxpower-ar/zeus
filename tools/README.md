@@ -1,16 +1,7 @@
 # Herramientas de PC
 
-Utilidades para probar el nodo interfaz desde la computadora. No son parte del firmware.
+Utilidades para probar la estación desde la computadora. No son parte del firmware.
 
-Se escriben en la **fase 9**. Hasta entonces, todo el sistema se puede probar a mano desde el
-**monitor serie del Arduino IDE**: los comandos del protocolo son texto plano justamente para
-eso (ver `docs/protocolo.md`).
-
-## Previsto
-
-| Script | Fase | Qué hace |
-|---|---|---|
-| `descargar.py` | 9 | Abre el puerto serie, manda `DESCARGAR` y guarda el CSV |
-| `monitor.py` | 9 | Muestra la medición actual, refrescándola |
-
-Requisito: Python con `pyserial` (`pip install pyserial`).
+Por ahora no hay ninguna. El servidor de prueba que estaba previsto acá se reemplazó por
+nuestro servidor de Google Sheets (ver [`servidor/LEEME.md`](../servidor/LEEME.md)), que se
+prueba desde la PC con `curl`.

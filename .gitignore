@@ -22,3 +22,6 @@ datos/
 # La excepción es libraries/EstacionComun/, que sí es del proyecto.
 libraries/*
 !libraries/EstacionComun/
+
+# Contraseñas WiFi y claves de la API: nunca al repositorio
+secretos.h

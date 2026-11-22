@@ -378,7 +378,7 @@ la temperatura. Su hermano barato, el DS1307, se atrasa mucho más: conviene el 
 
 ## OLED SSD1306 + botones — interfaz local *(disponible)*
 
-Para el nodo interfaz, en la fase opcional A.
+Para la estación, en la fase opcional A (el nodo interfaz se retiró el 2026-10-27).
 
 - **OLED:** I²C, 3.3 V, dirección 0x3C, típicamente 128×64 píxeles
 - **Botones:** entre el pin y GND, con `INPUT_PULLUP` interno; presionado = LOW

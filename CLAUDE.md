@@ -4,23 +4,25 @@ Guía de trabajo para Claude Code en este repositorio. Léela antes de tocar có
 
 ## Qué es este proyecto
 
-Estación meteorológica de dos nodos, **proyecto de escuela secundaria**. Prioridad absoluta:
-que funcione, se entienda y se pueda explicar. La elegancia y la optimización vienen después,
-si sobra tiempo.
+Estación meteorológica con **un solo ESP32**, **proyecto de escuela secundaria**. Prioridad
+absoluta: que funcione, se entienda y se pueda explicar. La elegancia y la optimización vienen
+después, si sobra tiempo.
 
-- **Nodo de campo** (`estacion_campo/`): ESP32 con sensores, a la intemperie. Mide cada N
-  minutos y guarda cada medición en su memoria flash interna (LittleFS).
-- **Nodo interfaz** (`estacion_interfaz/`): ESP32 conectado por USB a una PC. Es un **puente**:
-  traduce comandos del puerto serie a paquetes ESP-NOW hacia el campo, y las respuestas de
-  vuelta. Tiene un display OLED y botones para operarlo sin PC.
-- **PC**: software de terceros que **no forma parte de este proyecto**. Nosotros solo
-  garantizamos un formato de salida estable por puerto serie.
+- **Estación** (`estacion_campo/`, placa **"Delta"**): ESP32 con sensores, a la intemperie.
+  Mide cada N minutos, guarda cada medición en su memoria flash interna (LittleFS) y la manda
+  por **WiFi** a una API del ITR.
+- **Servidor del ITR**: lo hace el equipo de software y **no forma parte de este proyecto**.
+  Nosotros garantizamos el formato de línea acordado en `docs/servidor.md`. Para tocar su
+  código o cambiar el contrato, se consulta con ellos.
+- **Retirado (2026-10-27):** el nodo puente USB **"Beta"** (`estacion_interfaz/`) y el enlace
+  ESP-NOW. No escribir código nuevo para ellos.
 
 ## Reglas de oro
 
-1. **El formato del dato y el protocolo viven en `libraries/EstacionComun/`, nunca duplicados.**
-   Si el struct `Medicion` o el formato de paquete se copian en los dos sketches, tarde o
-   temprano divergen y los nodos dejan de entenderse. Cambio ahí, recompilan ambos.
+1. **El formato del dato y de la línea al servidor viven en `libraries/EstacionComun/`, nunca
+   duplicados.** Si el struct `Medicion` o el armado de la línea se copian en el firmware y en
+   los sketches de `pruebas/`, tarde o temprano divergen. Cambiar el formato de la línea
+   rompe al servidor: **se acuerda antes con el equipo de software**.
 2. **Una fase por vez.** El plan está en `docs/plan.md`. No adelantar trabajo de fases
    futuras ni implementar lo marcado como OPCIONAL antes de terminar el núcleo.
 3. **Ningún valor de calibración se inventa.** Toda constante que traduzca voltaje a magnitud
@@ -56,7 +58,7 @@ anduvo.
 Estas no son preferencias, son limitaciones físicas del ESP32. Violarlas produce bugs que
 parecen misteriosos.
 
-- **ADC2 no funciona con WiFi/ESP-NOW activo.** Toda entrada analógica va obligatoriamente a
+- **ADC2 no funciona con WiFi activo** (y la estación usa WiFi siempre). Toda entrada analógica va obligatoriamente a
   ADC1: GPIO **32, 33, 34, 35, 36 (VP), 39 (VN)**. Sin excepción.
 - **GPIO 0, 2, 12 y 15 son pines de strapping.** Una señal con pull-up conectada ahí puede
   impedir que la placa arranque. No usarlos para entradas de sensores.
@@ -72,13 +74,14 @@ pin nuevo, leer ese archivo** — no reasignar pines de memoria.
 ## Estructura del repositorio
 
 ```
-estacion_campo/          Sketch del nodo registrador
-estacion_interfaz/       Sketch del nodo puente USB
-libraries/EstacionComun/ Código compartido: Medicion, Protocolo, Transporte
+estacion_campo/          Firmware de la estación (placa Delta)
+estacion_interfaz/       RETIRADO: nodo puente USB (placa Beta), se conserva como referencia
+libraries/EstacionComun/ Código compartido: Medicion y formato de la línea al servidor
 pruebas/                 Sketches de prueba de concepto, uno por sensor. NO son firmware
-docs/                    Plan, bitácora, protocolo, formato de datos, hardware
+docs/                    Plan, bitácora, envío al servidor, formato de datos, hardware
 hardware/                Lista de componentes y calibraciones reales
-tools/                   Scripts de PC para probar el puerto serie
+servidor/                Nuestro servidor: Google Sheets + Apps Script (Codigo.gs es copia de referencia)
+tools/                   Scripts de PC
 img/                     Fotos de los componentes
 ```
 
@@ -92,7 +95,10 @@ img/                     Fotos de los componentes
   hace más de una cosa.
 - Toda función que lea un sensor devuelve además si la lectura fue **válida**. Un sensor
   desconectado tiene que producir un dato marcado como inválido, no un cero silencioso.
-- Sin `delay()` largos en el bucle principal del nodo de campo.
+- Sin `delay()` largos en el bucle principal: la estación tiene que seguir midiendo aunque el
+  WiFi o el servidor no respondan.
+- **Contraseñas WiFi y claves de la API nunca en el repositorio.** Van en `secretos.h`, que
+  está en el `.gitignore`.
 
 ## Sobre el hardware disponible
 

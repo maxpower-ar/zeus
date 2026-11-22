@@ -17,12 +17,13 @@ Completar en la fase 0.
 
 | Dato | Valor |
 |---|---|
-| MAC del nodo de campo | *(pendiente, fase 0)* |
-| MAC del nodo interfaz | *(pendiente, fase 0)* |
+| MAC de la estación (Delta) | *(pendiente, fase 0)* |
+| MAC del nodo interfaz (Beta, retirado) | — |
 | Versión del Arduino IDE | *(pendiente)* |
 | Versión del core ESP32 | *(pendiente)* |
-| Puerto COM del nodo de campo | *(pendiente)* |
-| Puerto COM del nodo interfaz | *(pendiente)* |
+| Puerto COM de la estación | *(pendiente)* |
+| Código de la estación | `EM_ITR_001` |
+| Red WiFi | *(pendiente: tipo de red a averiguar con sistemas del ITR)* |
 | Ubicación de la estación | *(pendiente)* |
 | Altitud del lugar | *(pendiente, se necesita para interpretar la presión)* |
 
@@ -41,6 +42,216 @@ Completar en la fase 0.
 
 **Pendiente para la próxima:**
 ```
+
+---
+
+## 2026-11-22 — Fases 6 y 9 (adelantadas) — Guardar primero, mandar después
+
+**Qué se escribió:** `pruebas/registro_y_envio/`. Cada minuto mide DHT22 + anemómetro,
+**guarda en la flash (LittleFS)** y después manda las pendientes a la planilla, en tandas de
+hasta 20, de la más vieja a la más nueva. Una medición se da por enviada solo si el servidor
+confirma todas las líneas de la tanda (`guardadas + duplicadas = mandadas`).
+
+- Registro circular de 20 000 mediciones (~14 días sin red a 1 por minuto, ~69 a 1 cada 5).
+  Si se llena, la más vieja cede su lugar y se cuenta como perdida
+- Cada medición guardada lleva un CRC: si la flash se corrompe, se descarta en vez de mandarse
+- `Medicion` pasó a `libraries/EstacionComun/src/Medicion.h`, y `armarLinea` ahora recibe un
+  `Medicion` (se adaptó `envio_sheets`)
+- Velocidad del viento: **promedio desde la medición anterior**, con `METROS_POR_PULSO`
+  todavía sin calibrar (`TODO: calibrar`)
+- Sensores que faltan (gas, dirección, presión, luminosidad): `NaN`, no `-1`. En la planilla
+  quedan como celda vacía; un `-1` se confundiría con un dato real (−1 °C existe)
+- Teclas para probar: `e` estado, `w` cortar/reconectar el WiFi, `B` borrar el registro
+
+**Qué se verificó:** los dos sketches compilan sin advertencias (core ESP32 3.3.10). **No se
+probó en la placa.**
+
+**Limitación conocida:** si la placa arranca sin internet no tiene hora y no registra nada
+hasta conectarse una vez. Lo resuelve el DS3231.
+
+---
+
+## 2026-11-22 — Fase 10 (adelantada) — Primer envío aceptado por la API del ITR
+
+**Qué cambió en su API desde el 17/11:** ahora los campos **obligatorios** (numéricos, sin
+`null`) son `temperatura`, `humedad`, `velocidad_viento` y `co_concentracion` (ppm).
+`presion` y `luminosidad` ya **no se validan**: se pueden mandar en `null`. La página dice
+"ESP32 · API Flask · React · **SQLite**": parece que dejaron Firebase.
+
+**Qué se hizo:** un envío de prueba desde la PC con `curl`:
+
+```
+{"temperatura":22.5,"humedad":48,"velocidad_viento":0.0,"co_concentracion":0,
+ "presion":null,"luminosidad":null,"codigo":"EM_PRUEBA","prueba":true}
+→ HTTP 201 CREATED  {"id":"hAtJzXuvSO7pkqjVuxhk","ok":true}
+```
+
+La lectura apareció en su página (captura:
+`docs/capturas/2026-11-22-lectura-en-pagina-itr.png`). **Envío y recepción funcionan.**
+
+**Ojo:** `velocidad_viento` y `co_concentracion` se mandaron en 0 porque son obligatorios. En
+su página se ven como valores reales: hay que pedirles que borren la lectura
+`hAtJzXuvSO7pkqjVuxhk`. Sigue faltando que acepten `null` en esos dos campos (no hay sensor de
+gas todavía) y que reciban la fecha de la medición y el código de estación.
+
+**Hardware:** no se consiguió el BME280; la presión queda sin sensor por ahora.
+
+---
+
+## 2026-11-17 — Fase 10 (adelantada) — Primera prueba contra la API del ITR
+
+**Qué se hizo:** el equipo de software pasó la URL y la clave de su API. Se probó desde la PC
+con `curl`. Captura: `docs/capturas/2026-11-17-prueba-api-itr.png`. La clave **no** se
+anota acá: va en `secretos.h`.
+
+**Qué se encontró:**
+
+- URL: `https://estacionmeteorologica.pythonanywhere.com/api/lecturas`. Flask en
+  PythonAnywhere; los datos se guardan en Firebase (Firestore, colección `lecturas`) y la
+  página los lee de ahí
+- **Hay conexión y la clave es válida.** Va en el encabezado `X-API-Key` (en
+  `Authorization: Bearer` o en la URL da 401)
+- **Solo POST.** `GET /api/lecturas` da 404
+- **Pide JSON**, no la línea acordada: con `[...;EOF]` responde `El cuerpo debe ser un JSON`
+- Campos **obligatorios** y numéricos: `temperatura`, `humedad`, `presion`, `luminosidad`. Si
+  falta alguno, o va `null`, rechaza la lectura entera
+- No acepta números como texto con coma (`"22,0"`)
+
+**Qué NO se hizo:** no se guardó ninguna lectura. Con nuestros sensores actuales no hay
+presión ni luminosidad, y mandar valores inventados los mostraría como reales en su página.
+
+**Diferencias con lo acordado (para hablar con el equipo de software):**
+
+1. Formato: línea `[...;EOF]` acordada contra JSON implementado
+2. Faltan en su API: código de estación, fecha y hora de la medición, velocidad del viento,
+   gas y dirección
+3. Sobra `luminosidad`: no hay sensor de luz en el proyecto
+4. Sensor sin dato: necesitamos poder mandar `null` (nuestro `NaN`) sin que rechace todo
+5. Sin fecha en el envío, las mediciones guardadas durante un corte de red llegarían con la
+   hora de llegada, no la de medición
+
+**Cambio en nuestro formato (mismo día):** se agregaron **presión** (hPa) y **luminosidad**
+(lux) al final de la línea, antes de `EOF`. Actualizados `LineaServidor`, `envio_sheets` y
+`Codigo.gs`; el sketch recompila sin advertencias. Las pestañas viejas de la planilla se migran
+solas. Falta: publicar la nueva versión del script y volver a subir el sketch a la placa.
+
+**Pendiente:** acordar el formato con el equipo de software antes de escribir el envío al ITR.
+
+---
+
+## 2026-11-10 — Fase 8 (adelantada) — Servidor propio en Google Sheets
+
+**Qué se decidió:** nuestro servidor es **Google Sheets + Google Apps Script**. Es gratuito, no
+pide tarjeta de crédito, guarda los datos en columnas como una planilla y sirve también para
+la página web (`doGet` devuelve JSON). Se descartaron:
+
+- **Cloud Storage:** guarda archivos, no filas
+- **Cloud Run / Cloud Functions:** piden tarjeta de crédito
+- **BigQuery sandbox:** borra las tablas a los 60 días
+- **Firestore:** cobra por cada dato leído (unas 50 000 lecturas por día en el plan gratuito)
+  y no se ve como planilla
+
+**Diseño:** una pestaña por mes (`AAAA-MM`), elegida por la fecha de la medición y no por la
+de llegada. Duplicados descartados por la columna `Id`. Clave propia en las propiedades del
+script y en `secretos.h`.
+
+**Qué se escribió (a pedido, antes de su fase):**
+
+- `servidor/Codigo.gs` y `servidor/LEEME.md`: el servidor y cómo instalarlo
+- `libraries/EstacionComun/src/LineaServidor.h/.cpp`: arma la línea. Se agregó
+  `library.properties` para que el IDE reconozca la librería
+- `pruebas/envio_sheets/`: manda el DHT22 una vez por minuto
+
+**Qué se verificó:** `envio_sheets` **compila sin advertencias** con arduino-cli (core ESP32
+3.3.10). La expresión regular del servidor se probó en la PC: acepta la línea del ejemplo y
+rechaza la hora con `;` y los valores no numéricos. **Nada de esto se probó todavía en la
+placa ni en Google.**
+
+**Detalle técnico:** Apps Script responde al POST con una redirección 302; la respuesta se lee
+haciendo GET a la dirección nueva. El sketch sigue la redirección a mano, para que el POST no
+se repita.
+
+**Servidor instalado y verificado** (cuenta `emitr.zeus@gmail.com`): `probarGuardado` dio
+GUARDADA y DUPLICADA. Desde la PC con `curl`: primer envío `OK guardadas=1 duplicadas=0`,
+segundo `OK guardadas=0 duplicadas=1`, con clave equivocada `ERROR clave incorrecta`, y la
+consulta GET devolvió el JSON con las filas de prueba (gas y dirección como `null`).
+
+**Probado en la placa:** `envio_sheets` con el DHT22 conectado se conecta al WiFi, toma la
+hora por NTP y las mediciones llegan a la planilla. Primero no compilaba
+(`LineaServidor.h: No such file or directory`): la ubicación del sketchbook del IDE apuntaba a
+`Documents\Arduino` y no al repositorio. Se corrigió y se reinstalaron ahí las librerías del
+DHT22 (con Adafruit Unified Sensor).
+
+**Pendiente:**
+
+- HTTPS sin validar el certificado (`setInsecure()`): aceptable en banco, se corrige en la
+  fase 10
+
+---
+
+## 2026-10-27 — Cambio de arquitectura — Un solo ESP32 que manda a un servidor
+
+**Qué cambió:** se retira el ESP32 **Beta** (nodo puente USB que recibía los datos de Delta por
+ESP-NOW). Queda solo **Delta**, que ahora manda cada medición por **WiFi** a una API del ITR.
+El servidor lo hace el equipo de software de la escuela.
+
+**Sensores del núcleo:** velocidad del viento (encoder, ya funciona en banco), temperatura y
+humedad (DHT22, falta terminar), gas (después de los dos anteriores) y presión (BME280,
+pedido). La dirección del viento se posterga y se rediseña con Hall. Idea a futuro: un
+pluviómetro de balancín con uno de los A3144.
+
+**Formato acordado de la línea:**
+
+```
+[26/10/2026;09:56;EM_ITR_001;26,1;24;12,4;NaN;NaN;EOF]
+ fecha      hora  código     temp hum vel  gas dirección
+```
+
+- El "nombre" y el "código EM" son el mismo campo (EM = Estación Meteorológica)
+- Hora con `:` (`09:56`), no con `;`
+- Gas antes que dirección del viento
+- Dato inválido o sensor sin instalar = `NaN`
+- Separador decimal: **pendiente**
+
+**Decisiones tomadas:**
+
+- La hora sale de **NTP**, con el **DS3231 como respaldo** por si la placa se reinicia sin red
+- El log en LittleFS se conserva como **buffer**: sin red la estación sigue midiendo y al
+  volver la conexión manda lo pendiente, en orden
+- Se arma un **servidor de prueba propio** en `tools/` para no depender del servidor real
+  durante el desarrollo. Al final se revisa y compara con el código del equipo de software
+- Las contraseñas van en `secretos.h`, fuera del repositorio
+- Plan reescrito: fases 7 (WiFi + NTP), 8 (envío al servidor de prueba), 9 (cortes de red) y
+  10 (integración con el ITR). Ver `docs/servidor.md`
+
+**Corrección a la URL dictada:** `www.itr.edu.ar/estacion001:9090` no es una URL válida, porque
+el puerto va pegado al dominio. Lo probable es `https://itr.edu.ar:9090/estacion001`. Hay que
+confirmarlo con el profesor o el equipo de software.
+
+**Preguntas para el equipo de software:**
+
+1. URL exacta: dominio, puerto y ruta
+2. Método (POST o GET) y cuerpo: ¿la línea sola, o con el prefijo `DATOS:`? ¿`text/plain` o JSON?
+3. Qué código HTTP devuelven si llegó bien y cuál si el formato es inválido
+4. Si llega dos veces la misma medición (pasa después de un corte), ¿la descartan?
+5. ¿Se pueden mandar varias líneas juntas en un solo pedido?
+6. ¿Hace falta una clave o token?
+7. Zona horaria: ¿hora de Argentina (UTC−3) o UTC?
+8. Unidades de velocidad (km/h o m/s) y de gas, y separador decimal
+9. Agregar un campo para la presión del BME280
+10. Cada cuánto esperan una medición
+11. ¿Hay un servidor de prueba, o se prueba contra el real?
+
+**Preguntas para sistemas del ITR:**
+
+1. Tipo de red WiFi: contraseña común (WPA2-Personal), usuario y contraseña personales
+   (WPA2-Enterprise) o página de login (portal cautivo)
+2. Que tenga una red de **2.4 GHz** (el ESP32 no se conecta a 5 GHz)
+3. Si dejan salir conexiones al puerto 9090, o si el firewall lo bloquea
+4. Si hace falta registrar la MAC de la placa
+
+**Pendiente para la próxima:** terminar el DHT22 (fase 1: bandera de validez) y averiguar el
+tipo de red.
 
 ---
 
