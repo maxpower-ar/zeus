@@ -8,6 +8,10 @@
  * doPost: recibe una o varias lineas del ESP32 (una por renglon) con el formato de
  *         docs/servidor.md y guarda cada una como fila en la pestana de su mes (AAAA-MM).
  * doGet:  devuelve las mediciones de un rango de fechas en JSON, para la pagina web.
+ *
+ * Cada dato puede ser un numero, NaN o ERR:
+ *   NaN = el sensor no esta instalado (esperable)   -> celda vacia        -> null en el JSON
+ *   ERR = el sensor esta pero fallo (hay que verlo) -> celda "ERR" en rojo -> "ERR" en el JSON
  */
 
 const ZONA_HORARIA = 'America/Argentina/Buenos_Aires';
@@ -33,9 +37,24 @@ const DIAS_POR_DEFECTO = 7;
 const MAX_DIAS_CONSULTA = 92;
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
 
+// Lo que se escribe en vez de un numero (ver docs/servidor.md).
+const TEXTO_SIN_SENSOR = 'NaN';
+const TEXTO_FALLA = 'ERR';
+
+// Colores de la celda con ERR (formato condicional): fondo rojo claro, letra roja.
+const COLOR_FONDO_FALLA = '#f4cccc';
+const COLOR_LETRA_FALLA = '#cc0000';
+const RANGO_DATOS = 'C2:I';  // de Temperatura a Luminosidad, todas las filas
+
 // [DD/MM/AAAA;HH:MM;CODIGO;temperatura;humedad;velocidad;gas;direccion;presion;luminosidad;EOF]
-const PATRON_LINEA =
-  /^\[(\d{2})\/(\d{2})\/(\d{4});(\d{2}):(\d{2});([A-Za-z0-9_]+);([^;\]]*);([^;\]]*);([^;\]]*);([^;\]]*);([^;\]]*);([^;\]]*);([^;\]]*);EOF\]$/;
+// Cada dato: un numero (con coma o punto), NaN o ERR. La direccion: N, NE ... NO, NaN o ERR.
+// (Dentro de un texto de JavaScript la barra invertida va doble: '\\d' es \d en el patron.)
+const VALOR = '(-?\\d+(?:[.,]\\d+)?|NaN|ERR)';
+const DIRECCION = '([A-Z]{1,2}|NaN|ERR)';
+const PATRON_LINEA = new RegExp(
+  '^\\[(\\d{2})/(\\d{2})/(\\d{4});(\\d{2}):(\\d{2});([A-Za-z0-9_]+);' +
+  VALOR + ';' + VALOR + ';' + VALOR + ';' + VALOR + ';' + DIRECCION + ';' +
+  VALOR + ';' + VALOR + ';EOF\\]$');
 
 
 // ---------------------------------------------------------------- recepcion
@@ -109,7 +128,7 @@ function guardarLinea(libro, linea) {
 
   const codigo = m[6];
   const numeros = [m[7], m[8], m[9], m[10]].map(convertirNumero);
-  const direccion = (m[11] === 'NaN') ? '' : m[11];
+  const direccion = (m[11] === TEXTO_SIN_SENSOR) ? '' : m[11];  // ERR queda como texto
   const presionYLuz = [m[12], m[13]].map(convertirNumero);
   if (numeros.concat(presionYLuz).some(n => n === undefined)) {
     return 'valor no numerico: ' + linea;
@@ -126,12 +145,16 @@ function guardarLinea(libro, linea) {
 }
 
 /**
- * "26,1" o "26.1" -> 26.1   "NaN" o vacio -> '' (celda vacia: dato inexistente, NO cero)
+ * "26,1" o "26.1" -> 26.1
+ * "NaN"           -> ''    (celda vacia: sensor no instalado, NO cero)
+ * "ERR"           -> 'ERR' (texto en la celda, en rojo: el sensor fallo)
  * Cualquier otra cosa -> undefined (la linea se rechaza).
  */
 function convertirNumero(textoValor) {
   const t = textoValor.trim();
-  if (t === '' || t === 'NaN') return '';
+  if (t === TEXTO_SIN_SENSOR) return '';
+  if (t === TEXTO_FALLA) return TEXTO_FALLA;
+  if (t === '') return undefined;
   const n = Number(t.replace(',', '.'));
   return isFinite(n) ? n : undefined;
 }
@@ -140,6 +163,7 @@ function obtenerPestanaMes(libro, nombre) {
   let hoja = libro.getSheetByName(nombre);
   if (hoja) {
     migrarPestanaVieja(hoja);
+    agregarFormatoFalla(hoja);
     return hoja;
   }
 
@@ -148,7 +172,28 @@ function obtenerPestanaMes(libro, nombre) {
   hoja.setFrozenRows(1);
   hoja.getRange('A:A').setNumberFormat(FORMATO_FECHA_HORA);
   hoja.getRange(1, COLUMNA_RECIBIDO, hoja.getMaxRows(), 1).setNumberFormat(FORMATO_RECIBIDO);
+  agregarFormatoFalla(hoja);
   return hoja;
+}
+
+// Pinta de rojo las celdas con ERR, para que una falla de sensor se vea de lejos.
+// Si la pestana ya tiene la regla (o es de antes del 2026-11-22 y no la tiene), la deja bien.
+function agregarFormatoFalla(hoja) {
+  const reglas = hoja.getConditionalFormatRules();
+  const yaEsta = reglas.some(r => {
+    const c = r.getBooleanCondition();
+    return c && c.getCriteriaType() === SpreadsheetApp.BooleanCriteria.TEXT_EQUAL_TO &&
+      c.getCriteriaValues()[0] === TEXTO_FALLA;
+  });
+  if (yaEsta) return;
+  reglas.push(SpreadsheetApp.newConditionalFormatRule()
+    .whenTextEqualTo(TEXTO_FALLA)
+    .setBackground(COLOR_FONDO_FALLA)
+    .setFontColor(COLOR_LETRA_FALLA)
+    .setBold(true)
+    .setRanges([hoja.getRange(RANGO_DATOS)])
+    .build());
+  hoja.setConditionalFormatRules(reglas);
 }
 
 // Agrega las columnas de presion y luminosidad (vacias) a una pestana del formato viejo,
@@ -177,7 +222,9 @@ function texto(mensaje) {
  * GET .../exec                                  -> ultimos 7 dias
  * GET .../exec?desde=2026-10-01&hasta=2026-10-31 -> ese rango (maximo 92 dias)
  *
- * Los datos faltantes vienen como null, nunca como 0.
+ * Cada dato viene como numero, null (sensor no instalado) o el texto "ERR" (el sensor
+ * fallo). Nunca como 0. La pagina tiene que preguntar typeof valor === 'number' antes de
+ * graficar, y puede mostrar los "ERR" como alerta.
  */
 function doGet(e) {
   const p = (e && e.parameter) || {};
@@ -210,13 +257,13 @@ function doGet(e) {
       datos.push({
         fecha: Utilities.formatDate(fecha, ZONA_HORARIA, "yyyy-MM-dd'T'HH:mm"),
         codigo: f[1],
-        temperatura: vacioANull(f[2]),
-        humedad: vacioANull(f[3]),
-        viento: vacioANull(f[4]),
-        gas: vacioANull(f[5]),
-        direccion: vacioANull(f[6]),
-        presion: vieja ? null : vacioANull(f[7]),
-        luminosidad: vieja ? null : vacioANull(f[8])
+        temperatura: valorJson(f[2]),
+        humedad: valorJson(f[3]),
+        viento: valorJson(f[4]),
+        gas: valorJson(f[5]),
+        direccion: valorJson(f[6]),
+        presion: vieja ? null : valorJson(f[7]),
+        luminosidad: vieja ? null : valorJson(f[8])
       });
     });
   });
@@ -246,7 +293,8 @@ function pestanasEntre(desde, hasta) {
   return nombres;
 }
 
-function vacioANull(valor) {
+// Celda vacia -> null (sin sensor). "ERR" -> "ERR" (falla). Numero o rumbo -> tal cual.
+function valorJson(valor) {
   return valor === '' ? null : valor;
 }
 
@@ -286,4 +334,16 @@ function probarGuardado() {
   const libro = SpreadsheetApp.getActiveSpreadsheet();
   Logger.log(linea + '  ->  ' + guardarLinea(libro, linea));
   Logger.log('Segunda vez (tiene que decir DUPLICADA)  ->  ' + guardarLinea(libro, linea));
+}
+
+/**
+ * Prueba una medicion con FALLA: temperatura y humedad en ERR (como cuando el DHT22 no
+ * responde). Tiene que decir GUARDADA y en la planilla las dos celdas tienen que verse "ERR"
+ * en rojo. Codigo EM_PRUEBA_ERR, para no chocar con probarGuardado. Despues se puede borrar.
+ */
+function probarFalla() {
+  const ahora = Utilities.formatDate(new Date(), ZONA_HORARIA, 'dd/MM/yyyy;HH:mm');
+  const linea = '[' + ahora + ';EM_PRUEBA_ERR;ERR;ERR;3,2;NaN;NaN;NaN;NaN;EOF]';
+  const libro = SpreadsheetApp.getActiveSpreadsheet();
+  Logger.log(linea + '  ->  ' + guardarLinea(libro, linea));
 }

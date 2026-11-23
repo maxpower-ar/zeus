@@ -18,8 +18,8 @@ Placa: **ESP32 DevKit V1, 30 pines, ESP32-WROOM-32**.
 | Sensor de gas | GPIO39 (VN) | **ADC1**, solo entrada | Con divisor si la salida es de 5 V |
 | Anemómetro de motor *(fase 3b)* | GPIO36 (VP) | **ADC1**, solo entrada | Solo para el experimento comparativo. Con divisor resistivo |
 | Tensión de batería | GPIO33 | **ADC1** | Con divisor. Fase opcional B |
-| I²C SDA | GPIO21 | Bus compartido | BME280 + DS3231 |
-| I²C SCL | GPIO22 | Bus compartido | |
+| I²C SDA | GPIO21 | Bus compartido | BMP180 + pantalla OLED + DS3231 (cuando se compre) |
+| I²C SCL | GPIO22 | Bus compartido | A 400 kHz (`FRECUENCIA_I2C_HZ` en `config.h`) |
 | Hall N | GPIO13 | Digital entrada | Vía conversor de nivel. **Veleta postergada:** los 8 pines Hall quedan reservados hasta el rediseño |
 | Hall NE | GPIO14 | Digital entrada | |
 | Hall E | GPIO16 | Digital entrada | UART2 RX, libre (no se usa UART2) |
@@ -34,8 +34,8 @@ Pines deliberadamente **libres**: GPIO 0, 2, 12, 15 (strapping) y GPIO 1, 3 (pue
 
 ## Nodo interfaz — RETIRADO
 
-La placa Beta se retiró el 2026-10-27. Si se agrega la pantalla OLED (fase opcional A), va en
-la estación, sobre el mismo bus I²C (GPIO21/22). Los botones necesitarían pines nuevos:
+La placa Beta se retiró el 2026-10-27. La pantalla OLED pasó a la estación, sobre el mismo bus
+I²C (GPIO21/22), sin pines nuevos. Los botones (fase opcional A) necesitarían pines nuevos:
 **revisar este archivo antes de asignarlos**, porque los que usaba Beta (13, 14, 27) en Delta
 están reservados para los Hall.
 
@@ -48,9 +48,12 @@ cada uno tiene una dirección distinta:
 
 | Dispositivo | Dirección |
 |---|---|
-| DS3231 (reloj) | 0x68 |
-| BME280 (presión) | 0x76 (o 0x77) |
-| OLED SSD1306 *(opcional A)* | 0x3C (o 0x3D) |
+| OLED SSD1306 128×64 (pantalla) | 0x3C |
+| DS3231 (reloj, **todavía no comprado**) | 0x68 |
+| BMP180 (presión, **en camino**) | 0x77 (fija) |
+
+El BMP180 reemplaza al BME280, que no se consiguió. Si algún día llega un BME280, ojo: usa
+0x76 o 0x77, y en 0x77 chocaría con el BMP180.
 
 Ante cualquier duda de conexionado, correr un **escáner I²C**: si el dispositivo no aparece en
 la lista, el problema es de cableado o alimentación, no de código.

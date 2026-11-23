@@ -3,14 +3,17 @@
 Librería local con todo lo que define **cómo es un dato**. La usan el firmware de la estación
 y los sketches de `pruebas/` que necesiten armar mediciones.
 
-**Todavía vacía.** Se escribe en las fases 5 y 8 del plan.
+## Archivos
 
-## Archivos previstos
+| Archivo | Contenido |
+|---|---|
+| `Medicion.h` | El struct de una medición, con el **estado de cada dato** (ok / sin sensor / falla) y `VERSION_MEDICION`. Fuente única de verdad del formato |
+| `LineaServidor.h/.cpp` | Traduce un `Medicion` a la línea `[fecha;hora;codigo;...;EOF]` de `docs/servidor.md`: `NaN` si no hay sensor, `ERR` si falló |
+| `JsonItr.h/.cpp` | Traduce un `Medicion` al JSON de la API del ITR (`null` + lista `"fallas"`) |
 
-| Archivo | Fase | Contenido |
-|---|---|---|
-| `Medicion.h` | 5 | El struct del registro. Fuente única de verdad del formato |
-| `LineaServidor.h/.cpp` | 8 | Traduce un `Medicion` a la línea `[fecha;hora;codigo;...;EOF]` de `docs/servidor.md` |
+Si se cambia el struct `Medicion`, **subir `VERSION_MEDICION`** (un `static_assert` del tamaño
+lo recuerda al compilar): el registro en flash de la estación descarta lo guardado con otra
+versión en vez de leerlo mal.
 
 ## Por qué existe esta carpeta
 

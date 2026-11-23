@@ -14,7 +14,8 @@
        vienen con el soporte de ESP32. EstacionComun viene en el repositorio.
 
   Conexionado: el mismo de pruebas/dht22 (DATA en GPIO4). Sin el DHT22 conectado tambien
-  funciona: temperatura y humedad salen como NaN y quedan como celdas vacias.
+  funciona: temperatura y humedad salen como ERR (sensor instalado que no responde) y quedan
+  en rojo en la planilla.
 
   Monitor serie a 115200.
 */
@@ -146,11 +147,12 @@ void medirYEnviar() {
     return;
   }
 
-  // Todo arranca en "sin dato"; solo se completa lo que hay. Viento, gas, direccion,
+  // Todo arranca en "sin sensor" (NaN); solo se completa lo que hay. Viento, gas, direccion,
   // presion y luminosidad quedan en NaN (ver pruebas/registro_y_envio para el anemometro).
+  // El DHT22 esta instalado: si no responde, anotarValor lo marca como falla (ERR).
   Medicion medicion = medicionVacia((uint32_t)time(nullptr));
-  medicion.temperatura = dht.readTemperature();  // NaN si el sensor no responde
-  medicion.humedad = dht.readHumidity();
+  anotarValor(medicion.temperatura, medicion.estadoTemperatura, dht.readTemperature());
+  anotarValor(medicion.humedad, medicion.estadoHumedad, dht.readHumidity());
 
   char linea[TAMANO_LINEA];
   if (!armarLinea(linea, sizeof(linea), CODIGO_ESTACION, medicion)) {

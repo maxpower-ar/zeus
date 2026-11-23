@@ -64,6 +64,10 @@ En la planilla aparece una pestaña nueva con el mes actual y una fila `EM_PRUEB
 gas y dirección quedan **vacías**: así se ve un dato que no existe (nunca un cero). La fila de
 prueba se puede borrar.
 
+Para ver cómo queda una **falla de sensor**, ejecutar **`probarFalla`**: tiene que decir
+`GUARDADA` y aparecer una fila `EM_PRUEBA_ERR` con temperatura y humedad en **`ERR`, en
+rojo**. También se puede borrar.
+
 ### 6. Publicar la API
 
 1. **Implementar → Nueva implementación**
@@ -108,11 +112,27 @@ Implementar.** La URL sigue siendo la misma.
 | `OK guardadas=1 duplicadas=0` | Guardada | La da por enviada |
 | `OK guardadas=0 duplicadas=1` | Ya estaba guardada (reenvío después de un corte) | La da por enviada |
 | `ERROR clave incorrecta` | Falta la clave o es otra | Revisar `secretos.h` |
-| `ERROR linea 1: formato invalido ...` | La línea no respeta el formato | Bug en el firmware |
+| `ERROR linea 1: formato invalido ...` | La línea no respeta el formato | Bug en el firmware. Si la línea tiene `ERR`: falta publicar la versión nueva del script (ver arriba) |
 | `ERROR servidor ocupado, reintentar` | Llegaron muchos pedidos juntos | Reintentar más tarde |
 
 Varias líneas en un mismo envío (una por renglón) también se aceptan: es lo que va a usar la
 estación para mandar las mediciones pendientes después de un corte (fase 9).
+
+## `NaN` y `ERR`
+
+| La estación manda | En la planilla | En el JSON de la consulta |
+|---|---|---|
+| un número (`26,1`) | el número | el número |
+| `NaN` (sensor no instalado) | celda vacía | `null` |
+| `ERR` (sensor instalado que falló) | texto `ERR` en **rojo** (formato condicional) | `"ERR"` |
+
+El formato condicional se agrega solo a cada pestaña, también a las que ya existían, la
+primera vez que llega una medición.
+
+## Probar el formato sin Google
+
+`node tools/probar_servidor.js` carga este `Codigo.gs` y prueba la expresión regular y las
+conversiones con líneas buenas y malas. Correrlo cada vez que se toque el formato.
 
 ## Detalles de diseño
 

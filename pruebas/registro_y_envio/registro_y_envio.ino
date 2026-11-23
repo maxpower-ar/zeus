@@ -21,7 +21,7 @@
   Conexionado:
     DHT22:  DATA -> GPIO4, VCC -> 3V3
     Encoder del anemometro (FC-03): DO -> GPIO18, VCC -> 3V3 (NO a 5 V)
-  Cualquiera de los dos puede faltar: el DHT22 sale como NaN y el anemometro como 0 km/h
+  Cualquiera de los dos puede faltar: el DHT22 sale como ERR y el anemometro como 0 km/h
   (desde el codigo, "quieto" y "desconectado" se ven iguales).
 
   Teclas en el monitor serie (115200):
@@ -133,9 +133,10 @@ void medirYGuardar() {
   }
 
   Medicion medicion = medicionVacia((uint32_t)time(nullptr));
-  medicion.temperatura = dht.readTemperature();  // NaN si el sensor no responde
-  medicion.humedad = dht.readHumidity();
-  medicion.velocidad = velocidadPromedioKmh(millis());
+  // DHT22 y anemometro estan instalados: un NaN de la libreria es una falla (ERR).
+  anotarValor(medicion.temperatura, medicion.estadoTemperatura, dht.readTemperature());
+  anotarValor(medicion.humedad, medicion.estadoHumedad, dht.readHumidity());
+  anotarValor(medicion.velocidad, medicion.estadoVelocidad, velocidadPromedioKmh(millis()));
   // gas, direccion, presion y luminosidad: sin sensor todavia, quedan en NaN.
 
   if (guardarMedicion(medicion)) {

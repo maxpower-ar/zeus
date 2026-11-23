@@ -8,9 +8,41 @@ discrepa con este documento, manda el código y hay que corregir el documento.
 
 ## El registro: `Medicion`
 
-> **Versión en uso (2026-11-22):** `libraries/EstacionComun/src/Medicion.h` usa `float`
-> (32 bytes) en vez de los enteros de la tabla de abajo: un dato faltante se guarda como
-> `NAN`, igual que viaja al servidor. La versión compacta queda para si el espacio no alcanza.
+## Versión en uso: `Medicion` v2 (2026-11-22)
+
+La fuente de verdad es `libraries/EstacionComun/src/Medicion.h`. Usa `float` en vez de los
+enteros de la propuesta original (más abajo), y **cada dato lleva su estado**:
+
+| Estado | Significa | Valor | Viaja como |
+|---|---|---|---|
+| `DATO_OK` | El sensor respondió | el número | `26,1` |
+| `DATO_SIN_SENSOR` | El sensor no está instalado (`config.h`). Esperable | `NAN` | `NaN` |
+| `DATO_FALLA` | Está instalado pero falló. **Hay que revisarlo** | `NAN` | `ERR` |
+
+Un `NAN` solo no alcanza para distinguir "no hay sensor" de "el sensor se rompió": por eso
+el estado se guarda aparte. Nunca se usa un número (`-1`, `0`) como marca.
+
+| Campo | Tipo | Bytes | Unidad |
+|---|---|---|---|
+| `marcaTiempo` | `uint32_t` | 4 | segundos desde 1970 (UTC) |
+| `temperatura`, `humedad`, `velocidad`, `gas`, `presion`, `luminosidad` | `float` ×6 | 24 | °C, %, km/h, —, hPa, lux |
+| `direccion` | `char[4]` | 4 | `"N"` … `"NO"` |
+| `estadoTemperatura` … `estadoDireccion` | `uint8_t` ×7 | 7 | `EstadoDato` |
+| `reservado` | `uint8_t` | 1 | relleno, siempre 0 |
+| **Total** | | **40** | (más 1 byte de CRC al guardarlo) |
+
+**Versión del formato:** `VERSION_MEDICION = 2` (la 1 era sin estados). Si cambia el struct
+hay que subirla; un `static_assert` del tamaño frena la compilación si alguien se olvida. El
+registro en flash guardado con otra versión se descarta en vez de leerse mal.
+
+**Presión:** absoluta de la estación (lo que mide el BMP180), en hPa. No se corrige a nivel
+del mar porque no tenemos la altitud medida.
+
+---
+
+## Propuesta original (no implementada)
+
+Queda como referencia por si algún día el espacio no alcanza.
 
 
 Un registro de **tamaño fijo**. Que sea fijo no es un detalle: permite calcular la posición de
@@ -76,6 +108,11 @@ incorrecto se descarta y se reporta; no se entrega como si fuera bueno.
 
 ## El archivo de log
 
+> **Implementado (2026-11-22)** en `estacion_campo/registro.cpp`, con dos diferencias con lo
+> de abajo: la cabecera guarda **un índice de envío por servidor** (planilla e ITR), y la
+> capacidad es de **20 000 mediciones de 41 bytes** (~820 KB): a una cada 5 minutos, unos
+> **69 días** sin red. Firma `EMES`, versión 2.
+
 Archivo binario en LittleFS, formado por registros consecutivos de tamaño fijo:
 
 ```
@@ -121,6 +158,6 @@ Este cálculo debe **confirmarse en la fase 6** con el tamaño real de la partic
 Cada registro se traduce a una línea de texto y se manda por WiFi a la API del ITR. El formato
 de esa línea, lo acordado y lo pendiente están en [`servidor.md`](servidor.md).
 
-La traducción respeta la misma regla del byte `validez`: **un campo inválido se manda como
-`NaN`**, nunca como cero. Un cero dibujaría en un gráfico una caída de temperatura que nunca
+La traducción respeta el estado de cada campo: **sin sensor se manda como `NaN` y falla como
+`ERR`**, nunca como cero. Un cero dibujaría en un gráfico una caída de temperatura que nunca
 ocurrió.

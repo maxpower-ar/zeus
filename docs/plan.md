@@ -37,10 +37,11 @@ y las **fases opcionales**, que solo se abordan una vez terminado el núcleo.
 - [x] DHT22 conectado y leyendo temperatura y humedad
 - [ ] ~~LM35 #1 leyendo temperatura por ADC1~~ — **sensor fallado**, ver bitácora 2026-09-06
 - [ ] ~~LM35 #2 leyendo temperatura por ADC1~~ — **sensor fallado**, descartado
-- [ ] Contrastar las temperaturas entre sí y contra el UT890C *(solo queda el DHT22; se retoma en la fase 4 con el BME280)*
+- [ ] Contrastar las temperaturas entre sí y contra el UT890C *(solo queda el DHT22; se retoma en la fase 4 con el BMP180)*
 - [x] Registrar el error de cada sensor en `hardware/calibraciones/` (ver `temperatura.md`)
 - [ ] Cada función de lectura devuelve además si el dato es **válido** (sensor desconectado
-      debe producir un dato inválido, no un cero silencioso)
+      debe producir un dato inválido, no un cero silencioso) *(escrito 2026-11-22: estado
+      por campo y `ERR` en `estacion_campo/sensores.cpp`; falta desconectar el DHT22 en la placa)*
 
 **Verificación:** las tres temperaturas coinciden entre sí dentro de ~1 °C y con el multímetro.
 
@@ -127,12 +128,15 @@ tabla ajena.
 ---
 
 ### Fase 4 — Sensores nuevos: presión, gas y reloj
-> Requiere comprar BME280, sensor de gas y DS3231. El DS3231 ahora es **respaldo** de la hora
-> NTP (fase 7): da la hora cuando la placa arranca sin red.
+> Requiere BMP180 (**en camino**; reemplaza al BME280, que no se consiguió), sensor de gas y
+> DS3231. El DS3231 ahora es **respaldo** de la hora NTP (fase 7): da la hora cuando la placa
+> arranca sin red. El código del BMP180 y del DS3231 ya está en `estacion_campo/`,
+> desactivado en `config.h` (2026-11-22).
 
-- [ ] Escanear el bus I²C y ver las direcciones (BME280 0x76, DS3231 0x68)
-- [ ] BME280 entregando presión, temperatura y humedad
-- [ ] Comparar la presión con la del servicio meteorológico local (corregida por altitud)
+- [ ] Escanear el bus I²C y ver las direcciones (OLED 0x3C, BMP180 0x77, DS3231 0x68)
+- [ ] BMP180 entregando presión (absoluta, hPa) y temperatura. **No mide humedad**
+- [ ] Comparar la presión con la del servicio meteorológico local (la diferencia se explica
+      por la altitud, que hay que medir: no se inventa)
 - [ ] DS3231 con la hora puesta y conservándola tras desenchufar la placa
 - [ ] Sensor de gas leyendo (con su tiempo de precalentamiento respetado)
 
@@ -206,7 +210,8 @@ el DHT22. Falta integrarlo al firmware una vez hechas las fases 5 y 6.
       inválidos (`LineaServidor` en `EstacionComun`) *(escrita y compilada, falta probar en placa)*
 - [x] `pruebas/envio_sheets/` manda una medición por minuto y aparece en la planilla
 - [ ] Una medición solo se marca como enviada cuando el servidor responde `OK`
-- [ ] Integrarlo al firmware, armando la línea a partir del `Medicion`
+- [ ] Integrarlo al firmware, armando la línea a partir del `Medicion` *(escrito y compilado
+      en `estacion_campo/`, fase I; falta probar en placa)*
 
 **Verificación:** la planilla muestra una fila por medición, en la pestaña del mes, con el
 formato exacto de `docs/servidor.md`.
@@ -224,6 +229,52 @@ formato exacto de `docs/servidor.md`.
 
 **Verificación:** después del corte, la planilla tiene exactamente las mismas mediciones que
 la estación registró.
+
+---
+
+### Fase I — Integración: el firmware final en `estacion_campo/`
+> **Adelantada a pedido (2026-11-22).** Junta en un solo firmware lo probado por separado en
+> `pruebas/` (fases 5 a 9), el BMP180 de la fase 4 y la pantalla de la fase opcional A.
+> Componentes: DHT22, encoder FC-03, OLED SSD1306; BMP180 en camino; DS3231 sin comprar.
+
+**Plan de la sesión del 2026-11-22** (en este orden):
+
+1. Commit de lo pendiente de la sesión anterior
+2. Hardware final en la documentación: BMP180 en lugar del BME280 (I²C 0x77), OLED SSD1306
+   (0x3C) en la estación, DS3231 preparado pero desactivado
+3. **Valor de falla `ERR`** en `EstacionComun`: `Medicion` guarda el estado de cada campo
+   (ok / sin sensor / falla), `LineaServidor` escribe `NaN` o `ERR`, el registro en flash
+   sube de versión. Armado del JSON para la API del ITR en el mismo lugar
+4. `servidor/Codigo.gs` acepta `ERR`, lo guarda como texto en rojo y lo devuelve en el JSON
+   distinto de `null`. Expresión regular probada con node
+5. Firmware en `estacion_campo/`, un `.h/.cpp` por responsabilidad: `config`, `sensores`
+   (DHT22 + BMP180), `anemometro`, `registro` (flash, con un contador de envío por destino),
+   `red` (WiFi + NTP), `rtc` (DS3231, desactivado), `envio` (cola y reintentos),
+   `envio_sheets`, `envio_itr` (desactivado) y `pantalla`
+6. Compilar con `arduino-cli` y `--warnings all`: el firmware y las pruebas que usan
+   `EstacionComun`
+7. Documentación (`servidor.md`, `formato-datos.md`, `flujo-de-datos.md`, pinout, lista de
+   componentes, README, bitácora) y commit final
+
+**Al cierre de la sesión:** los 7 pasos hechos. El firmware y las pruebas compilan sin
+advertencias y la expresión regular del servidor pasa `tools/probar_servidor.js`. **Nada de
+esto se probó todavía en la placa** (detalle en la bitácora del 2026-11-22).
+
+**Tareas** (casilla marcada = verificado en la placa):
+
+- [ ] Medición alineada al reloj cada `INTERVALO_MEDICION_S` (5 min; 1 min para probar),
+      sin depender de la red
+- [ ] DHT22 desconectado a propósito → la medición sale con `ERR` y el monitor lo avisa
+- [ ] BMP180 con `BMP180_INSTALADO = false` → presión `NaN`; al llegar, activarlo y ver la
+      presión en hPa (absoluta, sin corregir a nivel del mar)
+- [ ] Pantalla OLED: última medición, WiFi, pendientes y hora
+- [ ] Tecla `w`: las mediciones se acumulan en la flash y se mandan solas al reconectar
+- [ ] La planilla muestra `ERR` en rojo y `doGet` lo devuelve como `"ERR"`
+- [ ] Envío al ITR: activar `ENVIAR_A_ITR` cuando su API acepte `null` y la fecha
+- [ ] DS3231: activar `RTC_INSTALADO` cuando se compre y probar un arranque sin red
+
+**Verificación:** con el firmware final la planilla recibe una fila por intervalo, sin huecos
+después de un corte de WiFi, con `NaN` en lo que no está instalado y `ERR` en lo que falló.
 
 ---
 
@@ -249,7 +300,9 @@ que el proyecto funcione ni para presentarlo. Están ordenadas por relación ent
 y lo que cuestan.
 
 ### Fase A (opcional) — Display OLED y navegación por botones
-> Requiere: OLED I²C y botones (ya disponibles).
+> Requiere: OLED I²C y botones (ya disponibles). **La pantalla se adelantó a pedido en la
+> fase I (2026-11-22)**: muestra medición, WiFi, pendientes, último envío y hora. Faltan los
+> botones y el menú.
 
 Pantalla en la estación para ver el estado sin PC: medición actual, registros pendientes de
 envío, estado del WiFi y del servidor, y un menú de tres botones (arriba / abajo / OK).
@@ -257,7 +310,8 @@ envío, estado del WiFi y del servidor, y un menú de tres botones (arriba / aba
 Es la más agradecida de las opcionales: mejora mucho la demostración del proyecto y es de
 dificultad baja. Si sobra tiempo, hacer esta primero.
 
-- [ ] OLED mostrando la medición actual
+- [ ] OLED mostrando la medición actual *(escrito en `estacion_campo/pantalla.cpp`, falta
+      probar en placa)*
 - [ ] Tres botones con `INPUT_PULLUP` y antirrebote
 - [ ] Menú de navegación
 - [ ] Indicador de estado del WiFi y del último envío

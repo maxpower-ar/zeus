@@ -45,6 +45,111 @@ Completar en la fase 0.
 
 ---
 
+## 2026-11-22 — Fase I (integración) — Firmware final y valor de falla `ERR`
+
+**Qué se hizo:** el firmware final en `estacion_campo/`, armado a partir de
+`pruebas/registro_y_envio/`, con un `.h/.cpp` por responsabilidad (ver su `LEEME.md`). Mide
+cada 5 minutos, guarda en la flash, manda a la planilla y muestra el estado en la pantalla
+OLED. El código viejo de la fase 1 (LM35) se borró de esa carpeta.
+
+**Hardware final:** DHT22 (GPIO4) y encoder FC-03 (GPIO18) instalados; **BMP180 en camino**
+(reemplaza al BME280; I²C 0x77, `BMP180_INSTALADO = false` hasta que llegue); OLED SSD1306 en
+0x3C; DS3231 preparado y desactivado. Gas, dirección y luminosidad sin sensor.
+
+**Cambio de formato — valor de falla `ERR`:**
+
+- `NaN` = sensor **no instalado** (esperable). `ERR` = sensor **instalado que falló** (no
+  responde, CRC del DHT22, BMP180 no detectado, lectura fuera de rango): hay que revisarlo
+- `Medicion` guarda un **estado por campo** (`DATO_OK`, `DATO_SIN_SENSOR`, `DATO_FALLA`).
+  Pasó a 40 bytes, `VERSION_MEDICION = 2`, con un `static_assert` del tamaño para que nadie
+  cambie el struct sin subir la versión. El CRC por registro se mantiene
+- `LineaServidor` escribe `ERR`; `Codigo.gs` lo acepta, lo guarda como texto **en rojo** y lo
+  devuelve en `doGet` como `"ERR"` (distinto de `null`)
+- **Hay que avisar al equipo de software** (mensaje listo al final de esta entrada)
+
+**Decisiones tomadas (sin consultar, a pedido):**
+
+1. **Mediciones alineadas al reloj** (10:00, 10:05…), no "cada 5 minutos desde que arrancó".
+   La primera se hace en el próximo turno, no al arrancar: así un reinicio no repite el
+   minuto de la medición anterior (el servidor la tomaría como duplicada). Para ver los
+   sensores sin esperar se agregó la tecla **`m`** (lee y muestra, no guarda)
+2. **`INTERVALO_MEDICION_S`** en segundos; un `static_assert` impide compilar con menos de 60
+3. **Rangos de plausibilidad** del fabricante (DHT22 −40…80 °C y 0…100 %; BMP180 300…1100
+   hPa): un valor afuera es `ERR`, nunca se recorta
+4. **El BMP180 se busca en el bus antes de cada lectura**: la librería no avisa si se
+   desconectó y devolvería un número cualquiera. Si vuelve, se reinicia solo
+5. **El anemómetro nunca da `ERR`**: "quieto" y "desconectado" se ven iguales. La tecla `m`
+   muestra el nivel del pin para revisarlo a mano
+6. **Presión absoluta** de la estación, en hPa, sin corregir a nivel del mar (no hay altitud
+   medida). La temperatura del BMP180 se muestra en el monitor serie para contrastar con el
+   DHT22, pero no se manda (el formato no tiene ese campo)
+7. **Registro con un contador de envío por servidor** (planilla e ITR): si uno no responde,
+   no traba al otro. Un servidor desactivado no acumula pendientes: al activarlo recibe desde
+   la medición siguiente. Firma del archivo `EMES` (la prueba usa `EMRG`): si se sube una y
+   después la otra, cada una reconoce que el archivo no es suyo y empieza de cero
+8. **Envío al ITR preparado y desactivado** (`ENVIAR_A_ITR = false`). JSON armado en
+   `EstacionComun/JsonItr.cpp`: sin sensor y falla van como `null` y los campos con falla se
+   listan en `"fallas"`; `fecha` en UTC. Una medición por pedido. Si responden 400/422 la
+   medición se saltea (reintentarla no sirve y trabaría la cola); queda en la planilla. La
+   URL va en `config.h` (no es secreta); la clave en `secretos.h` (`CLAVE_API_ITR`)
+9. **DS3231 sin librería extra:** 7 registros por I²C. Guarda la hora en UTC; si el chip
+   marca que perdió la hora (bandera OSF), no se usa. **No probado**: no hay DS3231
+10. **Pantalla:** `--` para "sin sensor" (más legible que NaN) y `ERR` para falla. Se
+    redibuja cada segundo; bus I²C a 400 kHz (~25 ms por dibujo). Si con cables largos hay
+    fallas de I²C, bajar `FRECUENCIA_I2C_HZ` a 100000
+11. **Expresión regular del servidor más estricta:** cada dato tiene que ser número, `NaN` o
+    `ERR` (antes aceptaba cualquier texto y lo filtraba después). Rechaza `err` en minúscula
+    y datos vacíos
+12. **Se guardó `tools/probar_servidor.js`**, que carga el `Codigo.gs` real y lo prueba con
+    node, para no reescribir la prueba cada vez
+
+**Qué se verificó:**
+
+- `estacion_campo` compila **sin advertencias** con `--warnings all` (compilación limpia,
+  core ESP32 3.3.10): usa el 87 % de la flash de programa y el 15 % de la RAM. También
+  compila sin advertencias una copia con BMP180, DS3231 e ITR activados e intervalo de 1 min
+- `pruebas/envio_sheets` y `pruebas/registro_y_envio` (adaptadas al estado por campo)
+  compilan sin advertencias
+- `node tools/probar_servidor.js`: 13 pruebas bien (líneas con `ERR` aceptadas; hora mal,
+  texto, `err`, dato vacío, formato viejo y falta de `EOF` rechazados; `doGet` devuelve
+  `null` y `"ERR"`)
+- Librerías instaladas con el arduino-cli del IDE: *Adafruit BMP085 Library* 1.2.4,
+  *Adafruit SSD1306* 2.5.17, *Adafruit GFX Library* 1.13.0
+
+**Qué NO se verificó:** nada se probó en la placa ni en Google. El armado de la línea y del
+JSON solo se compiló (no hay compilador de C++ para la PC). `Codigo.gs` nuevo **no está
+publicado**: hasta publicarlo, una línea con `ERR` vuelve como `formato invalido` y la cola de
+la planilla se queda esperando (no se pierde nada; el monitor serie avisa).
+
+**Pendiente:**
+
+1. Publicar `Codigo.gs` (Implementar → Gestionar implementaciones → editar → Nueva versión)
+   y ejecutar `probarFalla`
+2. Probar el firmware en la placa (pasos en la respuesta de la sesión y en
+   `estacion_campo/LEEME.md`)
+3. Mandarle al equipo de software el aviso de `ERR`
+4. Al llegar el BMP180: `BMP180_INSTALADO = true`, escanear el bus, comparar presión
+5. Calibrar `METROS_POR_PULSO`
+
+**Mensaje para el equipo de software:**
+
+> Hola. Cambiamos cómo marcamos un dato que falta, para distinguir dos casos:
+> - `NaN` = ese sensor no está instalado (por ejemplo, el gas). Es normal.
+> - `ERR` = el sensor está instalado pero falló la lectura. Hay que ir a revisarlo.
+>
+> En la línea: `[22/11/2026;10:05;EM_ITR_001;ERR;ERR;3,2;NaN;NaN;NaN;NaN;EOF]`. En nuestra
+> planilla `ERR` queda en rojo y la consulta JSON lo devuelve como el texto `"ERR"` (y
+> `NaN` como `null`): antes de graficar, fíjense que el valor sea número.
+>
+> Para su API (JSON) mandaríamos `null` en los dos casos, más una lista con los campos que
+> fallaron: `"fallas": ["temperatura","humedad"]`, y la hora de la medición en
+> `"fecha": "2026-11-22T13:05:00Z"` (UTC). Para activar el envío necesitamos que acepten
+> `null` en `co_concentracion` y `velocidad_viento` (no hay sensor de gas) y que guarden
+> `fecha` y `codigo`. ¿Les sirve así? Y si no, ¿qué responde su API si una lectura no les
+> gusta: 400? Nunca vamos a usar -1 ni 0 como marca: pueden ser datos reales.
+
+---
+
 ## 2026-11-22 — Fases 6 y 9 (adelantadas) — Guardar primero, mandar después
 
 **Qué se escribió:** `pruebas/registro_y_envio/`. Cada minuto mide DHT22 + anemómetro,

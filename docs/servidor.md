@@ -39,10 +39,11 @@ URL en `secretos.h`, no el firmware. Al final se comparan los dos.
 [DD/MM/AAAA;HH:MM;CODIGO;temperatura;humedad;velocidad;gas;direccion;presion;luminosidad;EOF]
 ```
 
-Ejemplo:
+Ejemplos:
 
 ```
 [26/10/2026;09:56;EM_ITR_001;26,1;24;12,4;NaN;NaN;1013,2;NaN;EOF]
+[22/11/2026;10:05;EM_ITR_001;ERR;ERR;3,2;NaN;NaN;NaN;NaN;EOF]     <- el DHT22 falló
 ```
 
 | # | Campo | Ejemplo | Estado |
@@ -55,15 +56,18 @@ Ejemplo:
 | 6 | Velocidad del viento | `12,4` | Acordado. **Unidad a confirmar** (km/h o m/s) |
 | 7 | Gas | `NaN` | Acordado el lugar. **Unidad a definir** con el sensor |
 | 8 | Dirección del viento | `NaN` | Acordado el lugar. Sensor postergado: va `NaN` hasta que exista |
-| 9 | Presión atmosférica | `1013,2` | Agregado 2026-11-17. Unidad: hPa (BME280) |
+| 9 | Presión atmosférica | `1013,2` | Agregado 2026-11-17. Unidad: hPa. **Presión absoluta de la estación** (BMP180), sin corregir a nivel del mar |
 | 10 | Luminosidad | `NaN` | Agregado 2026-11-17 porque la API del ITR lo pide. Unidad: lux. **Sin sensor todavía** |
 | — | Fin de línea | `EOF` | Acordado |
 
 Reglas:
 
 - **Separador de campos: `;`**
-- **Dato inválido o sensor sin instalar: `NaN`**, nunca `0`. Un cero es un dato (0 °C, viento
-  en calma); `NaN` significa "no sé". Confundirlos arruina cualquier gráfico
+- **Sensor no instalado: `NaN`.** Es esperable (por ejemplo, el gas mientras no haya sensor)
+- **Sensor instalado que falló: `ERR`** (desde el 2026-11-22). No respondió, llegó con el CRC
+  mal o dio un valor imposible. No es esperable: hay que ir a revisar el sensor
+- **Nunca `0` ni `-1` ni ningún número como marca.** Un cero es un dato (0 °C, viento en
+  calma) y −1 °C también existe. Cualquier número puede ser real; `NaN` y `ERR` no
 - **Separador decimal: a definir** (`26,1` o `26.1`). El separador `;` permite usar coma sin
   romper los campos, pero el servidor tiene que saber cuál esperar. El firmware usa coma
   (`SEPARADOR_DECIMAL` en `LineaServidor.h`); nuestro servidor acepta las dos
@@ -71,6 +75,37 @@ Reglas:
   del ITR está por acordar)
 
 La línea se arma en un solo lugar: `libraries/EstacionComun/src/LineaServidor.cpp`.
+
+### Cómo se ven `NaN` y `ERR` en nuestro servidor (Google Sheets)
+
+| En la línea | En la planilla | En el JSON de `doGet` (para la página) |
+|---|---|---|
+| `26,1` | `26.1` | `26.1` |
+| `NaN` | celda vacía | `null` |
+| `ERR` | texto `ERR`, **en rojo** | `"ERR"` (texto) |
+
+La página tiene que preguntar si el valor es un número (`typeof v === 'number'`) antes de
+graficarlo; un `"ERR"` se puede mostrar como alerta ("revisar sensor"), un `null` como "sin
+sensor".
+
+### JSON para la API del ITR
+
+Su API pide JSON, no la línea. El firmware lo arma en
+`libraries/EstacionComun/src/JsonItr.cpp` (envío **desactivado** hasta que su API acepte
+`null` y la fecha):
+
+```json
+{"codigo":"EM_ITR_001","fecha":"2026-11-22T13:35:00Z","temperatura":22.4,"humedad":48,
+ "velocidad_viento":3.2,"co_concentracion":null,"presion":null,"luminosidad":null,
+ "fallas":["presion"]}
+```
+
+- En JSON un número no puede valer `ERR`: **sin sensor y falla van como `null`**, y los campos
+  con falla se listan en `"fallas"`
+- `fecha`: hora de la **medición** en UTC (la `Z`). `codigo`, `fecha` y `fallas` son
+  **propuestas**: su API todavía no los guarda
+- Una medición por pedido. Si responden 400 o 422 (no aceptan esa medición), el firmware la
+  saltea para no trabar a las demás; queda igual en la planilla
 
 ---
 

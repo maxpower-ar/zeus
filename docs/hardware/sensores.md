@@ -308,24 +308,30 @@ material valioso para la defensa del proyecto, y el motor ya está comprado.
 
 ---
 
-## BME280 — presión atmosférica *(a comprar)*
+## BMP180 — presión atmosférica *(en camino)*
 
-Sensor I²C que entrega **presión, temperatura y humedad** en un solo integrado.
+Reemplaza al **BME280**, que no se consiguió. Sensor I²C que entrega **presión y
+temperatura**. **No mide humedad** (la humedad la sigue dando el DHT22).
 
-- **Alimentación:** 3.3 V (verificar el módulo; algunos traen regulador y aceptan 5 V)
-- **Conexión:** SDA a GPIO21, SCL a GPIO22
-- **Dirección I²C:** 0x76 (algunos módulos usan 0x77)
+- **Alimentación:** 3.3 V (la mayoría de los módulos traen regulador y aceptan también 5 V)
+- **Conexión:** SDA a GPIO21, SCL a GPIO22, en el mismo bus que la pantalla
+- **Dirección I²C:** **0x77**, fija
+- **Librería:** *Adafruit BMP085 Library* (el BMP180 es el sucesor del BMP085 y se programa
+  igual)
+- **En el firmware:** `BMP180_INSTALADO` en `estacion_campo/config.h`. Mientras está en
+  `false`, la presión sale como `NaN`. Con `true`, si el sensor no responde sale `ERR`
 
-Da presión, que es lo que se busca, y de paso una tercera temperatura y una segunda humedad
-para contrastar con el DHT22.
+**Qué presión se manda:** la **absoluta** de la estación, en hPa, la que realmente hay a la
+altura a la que está. El servicio meteorológico informa la presión **corregida a nivel del
+mar**, que es más alta (unos 12 hPa más cada 100 m de altitud). Para corregirla hace falta la
+altitud del lugar **medida**; no la tenemos y no se inventa. La corrección, si se hace, se
+puede hacer después en la página o la planilla, porque el dato crudo queda guardado.
 
-**Cuidado al comprar:** existe el **BMP280**, casi idéntico y más barato, pero **sin humedad**.
-Para este proyecto sirve igual (la humedad ya la da el DHT22), pero conviene saber cuál se está
-comprando.
+**Su temperatura** no se manda al servidor (el formato no tiene ese campo), pero el monitor
+serie la muestra al lado de la del DHT22: sirve para contrastar los dos sensores.
 
-**Verificación de la fase 4:** comparar la presión leída con la que informa el servicio
-meteorológico local. No van a coincidir exactamente porque la estación oficial corrige el valor
-al nivel del mar; la diferencia debería explicarse por la altitud del lugar.
+**Verificación de la fase 4:** escanear el bus y ver 0x77; comparar la presión con la del
+servicio meteorológico local, explicando la diferencia por la altitud.
 
 ---
 
@@ -360,7 +366,9 @@ problema si se implementa la fase opcional de batería.
 
 ## DS3231 — reloj de tiempo real *(a comprar)*
 
-Módulo I²C con pila de respaldo. **Imprescindible.**
+Módulo I²C con pila de respaldo. **Imprescindible.** El firmware ya lo soporta, desactivado
+(`RTC_INSTALADO` en `config.h`, código en `estacion_campo/rtc.cpp`, **sin probar**): guarda la
+hora en UTC, la entrega al arrancar y se pone en hora con cada sincronización NTP.
 
 - **Alimentación:** 3.3 V o 5 V
 - **Conexión:** SDA a GPIO21, SCL a GPIO22
@@ -378,9 +386,12 @@ la temperatura. Su hermano barato, el DS1307, se atrasa mucho más: conviene el 
 
 ## OLED SSD1306 + botones — interfaz local *(disponible)*
 
-Para la estación, en la fase opcional A (el nodo interfaz se retiró el 2026-10-27).
+La **pantalla ya está en el firmware** de la estación (`estacion_campo/pantalla.cpp`): hora,
+WiFi, última medición, pendientes de envío y último envío. Los botones quedan para la fase
+opcional A.
 
-- **OLED:** I²C, 3.3 V, dirección 0x3C, típicamente 128×64 píxeles
+- **OLED:** I²C, 3.3 V, dirección 0x3C, 128×64 píxeles (21 letras × 8 renglones).
+  Librerías *Adafruit SSD1306* y *Adafruit GFX Library*
 - **Botones:** entre el pin y GND, con `INPUT_PULLUP` interno; presionado = LOW
 
 Los botones **rebotan**: un solo apretón genera varias transiciones eléctricas en pocos

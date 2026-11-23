@@ -1,31 +1,23 @@
-// Lectura de los sensores del nodo de campo.
+#pragma once
+
+// Sensores de temperatura, humedad y presion: DHT22 (GPIO4) y BMP180 (I2C, 0x77).
 //
-// Regla del proyecto: toda funcion de lectura informa ademas si el dato es VALIDO.
-// Un sensor desconectado tiene que producir un dato invalido, nunca un cero silencioso.
+// Regla del proyecto: un sensor instalado que no responde NO produce un cero silencioso.
+//   - sensor no instalado (config.h)        -> el dato queda "sin sensor" (NaN)
+//   - instalado pero la lectura falla        -> el dato queda como FALLA (ERR) y se avisa
+//     por el monitor serie con la causa probable
+//
+// El anemometro tiene su propio modulo (anemometro.h).
 
-#ifndef SENSORES_H
-#define SENSORES_H
+#include <Medicion.h>
 
-#include <Arduino.h>
-
-// Una magnitud leida, con su bandera de validez.
-struct Lectura {
-  float valor;
-  bool valido;
-};
-
-struct LecturaDht {
-  Lectura temperatura;
-  Lectura humedad;
-};
-
+// Llamar despues de iniciar el bus I2C (Wire.begin).
 void iniciarSensores();
 
-// Temperatura y humedad del DHT22.
-LecturaDht leerDht();
+// Lee el DHT22 y el BMP180 y completa temperatura, humedad y presion de la medicion.
+// 'avisar' = imprimir en el monitor serie las fallas y la lectura del BMP180.
+void leerSensores(Medicion& medicion, bool avisar);
 
-// Temperatura de un LM35 conectado a un pin de ADC1.
-// 'offset' es la correccion medida contra el UT890C para ese sensor.
-Lectura leerLm35(int pin, float offset);
-
-#endif
+// Ultima temperatura leida por el BMP180, solo para comparar con el DHT22 en el monitor
+// serie (no se manda al servidor: el formato no tiene ese campo). NAN si no hay.
+float temperaturaBmp180();

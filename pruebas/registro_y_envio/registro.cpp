@@ -7,7 +7,9 @@ static const char* const RUTA_REGISTRO = "/mediciones.bin";
 // Firma para reconocer el archivo ("EMRG") y version del formato: si alguna vez cambia el
 // struct Medicion, se sube la version y el registro viejo se descarta en vez de leerse mal.
 static const uint32_t FIRMA = 0x454D5247;
-static const uint16_t VERSION_FORMATO = 1;
+// 2 = Medicion con estado por campo (VERSION_MEDICION 2).
+static const uint16_t VERSION_FORMATO = 2;
+static_assert(VERSION_MEDICION == 2, "Cambio Medicion: subir VERSION_FORMATO y este control");
 
 struct Cabecera {
   uint32_t firma;

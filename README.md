@@ -25,6 +25,9 @@ Cada medición viaja como una línea de texto:
  fecha      hora  estación   temp hum vel  gas dir presión luz
 ```
 
+Un dato que falta nunca va como cero: **`NaN`** si el sensor no está instalado, **`ERR`** si
+está instalado pero falló (hay que ir a revisarlo).
+
 El servidor lo hace el equipo de software del ITR y **no forma parte de este proyecto**. Lo que
 sí es parte del proyecto es entregarle los datos en el formato acordado
 ([`docs/servidor.md`](docs/servidor.md)).
@@ -37,11 +40,13 @@ sí es parte del proyecto es entregarle los datos en el formato acordado
 
 | Magnitud | Sensor | Estado |
 |---|---|---|
-| Temperatura y humedad | DHT22 | Funcionando en banco |
-| Velocidad del viento | Encoder óptico ranurado + paletas | Funcionando en banco, falta calibrar |
-| Gas / calidad de aire | MQ-135 o ENS160 | **A comprar** |
-| Presión atmosférica | BME280 | **No se consiguió**, pendiente |
-| Hora | NTP por internet, DS3231 de respaldo | DS3231 **a comprar** |
+| Temperatura y humedad | DHT22 (GPIO4) | Funcionando en banco |
+| Velocidad del viento | Encoder óptico FC-03 (GPIO18), disco de 30 ranuras | Funcionando en banco, falta calibrar |
+| Presión atmosférica | BMP180 (I²C 0x77) | **En camino**. Firmware listo, desactivado. Reemplaza al BME280, que no se consiguió |
+| Gas / calidad de aire | MQ-135 o ENS160 | **A comprar**. Mientras tanto `NaN` |
+| Luminosidad | BH1750 (sugerido) | **A definir**. Mientras tanto `NaN` |
+| Hora | NTP por internet, DS3231 de respaldo | DS3231 **a comprar**. Firmware listo, desactivado |
+| Pantalla | OLED SSD1306 128×64 (I²C 0x3C) | Disponible, en el firmware |
 | Dirección del viento | Sensores Hall A3144 | Postergada, se rediseña |
 | Lluvia *(opcional)* | Pluviómetro de balancín con un A3144 | Idea a futuro |
 
@@ -49,9 +54,10 @@ Detalle completo en [`hardware/lista-componentes.md`](hardware/lista-componentes
 
 ### Por qué dos sensores de temperatura
 
-El DHT22 y el BME280 miden temperatura y humedad. Comparar las dos lecturas permite detectar
-cuándo un sensor se está degradando o quedó mal ventilado. Es una técnica real de estaciones
-meteorológicas. Los dos LM35 que había para esto llegaron fallados y se descartaron.
+El DHT22 y el BMP180 miden temperatura. Comparar las dos lecturas permite detectar cuándo un
+sensor se está degradando o quedó mal ventilado. Es una técnica real de estaciones
+meteorológicas. El firmware muestra las dos en el monitor serie; al servidor va la del DHT22.
+Los dos LM35 que había para esto llegaron fallados y se descartaron.
 
 ### Cómo funciona el anemómetro
 
@@ -88,6 +94,9 @@ No viajan en el repositorio: son código de terceros. Se instalan una vez por m�
 |---|---|---|
 | DHT sensor library | Adafruit | DHT22 (temperatura y humedad) |
 | Adafruit Unified Sensor | Adafruit | Dependencia de la anterior; el IDE la ofrece solo |
+| Adafruit BMP085 Library | Adafruit | BMP180 (presión). Sirve para los dos chips |
+| Adafruit SSD1306 | Adafruit | Pantalla OLED |
+| Adafruit GFX Library | Adafruit | Letras y dibujo en la pantalla (el IDE ofrece *Adafruit BusIO* sola) |
 
 El Arduino IDE las descarga dentro de `libraries/` de este repositorio, porque el repositorio
 es el sketchbook. Están excluidas en el `.gitignore`.
@@ -101,7 +110,8 @@ libraries/EstacionComun/ Formato del dato y de la línea que se manda al servido
 pruebas/                 Sketches de prueba de concepto, uno por sensor (no son firmware)
 docs/                    Plan de trabajo, bitácora y documentación técnica
 hardware/                Componentes y calibraciones medidas
-tools/                   Utilidades de PC (servidor de prueba que imita al del ITR)
+servidor/                Nuestro servidor: Google Sheets + Apps Script
+tools/                   Utilidades de PC (prueba del formato del servidor con node)
 img/                     Fotos de los componentes reales
 ```
 
@@ -118,8 +128,9 @@ cambia, se avisa.
 El trabajo está dividido en fases, de lo más simple a lo más complejo, en
 [`docs/plan.md`](docs/plan.md). Cada fase termina con algo que se puede probar y ver funcionar.
 
-Las fases 0 a 3 no requieren comprar ningún componente. El envío al servidor está en las fases
-7 a 10.
+El **firmware final** está en [`estacion_campo/`](estacion_campo/LEEME.md) (escrito y
+compilado el 2026-11-22, falta probarlo en la placa). Junta lo probado en `pruebas/`: mide,
+guarda en la flash, manda a la planilla y muestra el estado en la pantalla.
 
 ## Documentación
 
