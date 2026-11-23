@@ -58,8 +58,9 @@ const uint16_t TIEMPO_ESPERA_HTTP_MS = 15000;
 const unsigned long INTERVALO_PANTALLA_MS = 1000;
 
 // ================================================================ registro en memoria
-// Cuantas mediciones entran en la memoria flash. Cada una ocupa 41 bytes, asi que 20000 son
-// ~820 KB, algo mas de la mitad de la particion de datos. A 1 cada 5 minutos son ~69 dias
+// Cuantas mediciones entran en la memoria flash. Cada una ocupa 44 bytes en el archivo (40 de
+// la medicion, 1 de CRC y 3 de relleno que agrega el compilador), asi que 20000 son ~880 KB,
+// algo mas de la mitad de la particion de datos. A 1 cada 5 minutos son ~69 dias
 // sin red (a 1 por minuto, ~14). Si se llena, la mas vieja cede su lugar.
 const uint32_t CAPACIDAD_REGISTROS = 20000;
 

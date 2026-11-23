@@ -30,7 +30,7 @@ static void anotarResultado(Destino destino, bool ok) {
   e.fallo = !ok;
   if (ok) {
     e.ultimoOk = time(nullptr);
-    Serial.printf("  -> CONFIRMADAS. Quedan pendientes para %s: %lu\n\n", nombreDestino(destino),
+    Serial.printf("  -> listo. Quedan pendientes para %s: %lu\n\n", nombreDestino(destino),
                   (unsigned long)cantidadPendientes(destino));
   } else {
     e.momentoFallo = millis();
@@ -39,23 +39,39 @@ static void anotarResultado(Destino destino, bool ok) {
   }
 }
 
+// Hay pendientes pero no se pudo leer ninguna (falla de la memoria): se cuenta como envio
+// fallido, asi se espera INTERVALO_REINTENTO_MS en vez de reintentar en cada vuelta del loop.
+static bool hayLectura(Destino destino, int cantidad) {
+  if (cantidad > 0) return true;
+  if (cantidadPendientes(destino) > 0) {
+    Serial.printf("[envio] %s: ERROR leyendo las pendientes de la memoria\n",
+                  nombreDestino(destino));
+    anotarResultado(destino, false);
+  }
+  return false;
+}
+
 static void enviarTandaSheets() {
   int cantidad = leerPendientes(DESTINO_SHEETS, lote, LOTE_MAXIMO_SHEETS);
-  if (cantidad == 0) return;
+  if (!hayLectura(DESTINO_SHEETS, cantidad)) return;
   Serial.printf("[envio] planilla: mandando %d de %lu pendientes:\n", cantidad,
                 (unsigned long)cantidadPendientes(DESTINO_SHEETS));
 
   bool ok = enviarLoteSheets(lote, cantidad);
-  if (ok) marcarEnviadas(DESTINO_SHEETS, cantidad);
+  if (ok) {
+    Serial.println("  CONFIRMADAS por el servidor");
+    marcarEnviadas(DESTINO_SHEETS, cantidad);
+  }
   anotarResultado(DESTINO_SHEETS, ok);
 }
 
 static void enviarTandaItr() {
-  if (leerPendientes(DESTINO_ITR, lote, 1) == 0) return;
+  if (!hayLectura(DESTINO_ITR, leerPendientes(DESTINO_ITR, lote, 1))) return;
   Serial.printf("[envio] ITR: mandando 1 de %lu pendientes:\n",
                 (unsigned long)cantidadPendientes(DESTINO_ITR));
 
   ResultadoItr resultado = enviarMedicionItr(lote[0]);
+  if (resultado == ITR_ACEPTADA) Serial.println("  CONFIRMADA por el ITR");
   if (resultado == ITR_RECHAZADA) {
     // Reintentarla no sirve (el servidor no la acepta asi): se saltea. La planilla la tiene.
     rechazadas++;

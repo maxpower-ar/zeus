@@ -31,6 +31,9 @@ struct RegistroGuardado {
   Medicion medicion;
   uint8_t crc;
 };
+// 40 + 1 de CRC + 3 de relleno: el compilador lo lleva a multiplo de 4. El relleno no entra
+// en el CRC. Si esto cambia, revisar CAPACIDAD_REGISTROS (cuanto ocupa en la flash).
+static_assert(sizeof(RegistroGuardado) == 44, "Cambio el tamano del registro guardado");
 
 static Cabecera cabecera;
 

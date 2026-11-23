@@ -116,6 +116,20 @@ OLED. El código viejo de la fase 1 (LM35) se borró de esa carpeta.
 - Librerías instaladas con el arduino-cli del IDE: *Adafruit BMP085 Library* 1.2.4,
   *Adafruit SSD1306* 2.5.17, *Adafruit GFX Library* 1.13.0
 
+**Revisión del código (después del primer commit, a pedido):** se encontró y corrigió:
+
+- Cada registro en la flash ocupa **44 bytes, no 41**: el compilador agrega 3 de relleno para
+  alinear. Las cuentas de espacio decían ~820 KB y son ~880 KB (entra igual; los días de
+  autonomía no cambian). Se agregó un `static_assert` que lo fija
+- Si había pendientes pero la memoria no se podía leer, la cola reintentaba en cada vuelta
+  del loop sin pausa. Ahora cuenta como envío fallido y espera el reintento
+- Un envío **rechazado** por el ITR se informaba como "CONFIRMADAS". Ahora el mensaje dice
+  qué pasó
+
+Quedó anotado y sin cambiar: si NTP corrige el reloj **hacia atrás** cruzando un turno, se
+puede medir dos veces el mismo minuto; la planilla descarta la segunda como duplicada (en la
+flash quedan las dos). Es raro y no pierde datos.
+
 **Qué NO se verificó:** nada se probó en la placa ni en Google. El armado de la línea y del
 JSON solo se compiló (no hay compilador de C++ para la PC). `Codigo.gs` nuevo **no está
 publicado**: hasta publicarlo, una línea con `ERR` vuelve como `formato invalido` y la cola de

@@ -29,7 +29,7 @@ el estado se guarda aparte. Nunca se usa un número (`-1`, `0`) como marca.
 | `direccion` | `char[4]` | 4 | `"N"` … `"NO"` |
 | `estadoTemperatura` … `estadoDireccion` | `uint8_t` ×7 | 7 | `EstadoDato` |
 | `reservado` | `uint8_t` | 1 | relleno, siempre 0 |
-| **Total** | | **40** | (más 1 byte de CRC al guardarlo) |
+| **Total** | | **40** | En el archivo ocupa **44**: 1 byte de CRC y 3 de relleno que agrega el compilador para alinear |
 
 **Versión del formato:** `VERSION_MEDICION = 2` (la 1 era sin estados). Si cambia el struct
 hay que subirla; un `static_assert` del tamaño frena la compilación si alguien se olvida. El
@@ -110,7 +110,7 @@ incorrecto se descarta y se reporta; no se entrega como si fuera bueno.
 
 > **Implementado (2026-11-22)** en `estacion_campo/registro.cpp`, con dos diferencias con lo
 > de abajo: la cabecera guarda **un índice de envío por servidor** (planilla e ITR), y la
-> capacidad es de **20 000 mediciones de 41 bytes** (~820 KB): a una cada 5 minutos, unos
+> capacidad es de **20 000 mediciones de 44 bytes** (~880 KB): a una cada 5 minutos, unos
 > **69 días** sin red. Firma `EMES`, versión 2.
 
 Archivo binario en LittleFS, formado por registros consecutivos de tamaño fijo:

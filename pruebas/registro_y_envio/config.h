@@ -24,9 +24,10 @@ const unsigned long INTERVALO_AVISO_WIFI_MS = 10000;
 const uint16_t TIEMPO_ESPERA_HTTP_MS = 15000;
 
 // ---------------------------------------------------------------- registro en memoria
-// Cuantas mediciones entran en la memoria flash. Cada una ocupa 41 bytes, asi que
-// 20000 son ~820 KB, algo mas de la mitad de la particion de datos. A 1 por minuto son
-// ~14 dias sin red; a 1 cada 5 minutos, ~69 dias. Si se llena, la mas vieja cede su lugar.
+// Cuantas mediciones entran en la memoria flash. Cada una ocupa 44 bytes (40 + CRC +
+// relleno), asi que 20000 son ~880 KB, algo mas de la mitad de la particion de datos.
+// A 1 por minuto son ~14 dias sin red; a 1 cada 5 minutos, ~69 dias. Si se llena, la mas
+// vieja cede su lugar.
 const uint32_t CAPACIDAD_REGISTROS = 20000;
 
 // Cuantas mediciones pendientes se mandan juntas en un solo envio, despues de un corte.
