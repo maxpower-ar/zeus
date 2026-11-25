@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Estación meteorológica</title>
+  <meta name="description" content="Mediciones actuales e historial de la estación meteorológica ESP32">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%232f6fdf'/%3E%3Cpath d='M9 20a5 5 0 0 1 1-9.9A7 7 0 0 1 23 12a4 4 0 0 1 0 8z' fill='white'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <header class="encabezado">
+    <div>
+      <h1>Estación meteorológica</h1>
+      <p class="subtitulo">ESP32 · datos de la planilla de Google Sheets</p>
+    </div>
+    <div class="estado" id="estado" role="status">
+      <span class="punto"></span><span id="estadoTexto">Cargando…</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="controles" aria-label="Qué mostrar">
+      <label class="campo">
+        <span>Estación</span>
+        <select id="estacion"></select>
+      </label>
+      <div class="rangos" role="group" aria-label="Período">
+        <button type="button" data-rango="1" class="activo">24 h</button>
+        <button type="button" data-rango="7">7 días</button>
+        <button type="button" data-rango="30">30 días</button>
+        <button type="button" data-rango="todo">Todo</button>
+      </div>
+      <div class="fechas">
+        <label class="campo"><span>Desde</span><input type="date" id="desde"></label>
+        <label class="campo"><span>Hasta</span><input type="date" id="hasta"></label>
+        <button type="button" id="aplicarFechas">Ver</button>
+      </div>
+    </section>
+
+    <section aria-labelledby="tituloActual">
+      <h2 id="tituloActual">Ahora <span class="detalle" id="horaActual"></span></h2>
+      <div class="tarjetas" id="tarjetas"></div>
+      <p class="nota">
+        <strong>NaN</strong> = el sensor no está instalado.
+        <strong class="falla">ERR</strong> = el sensor está instalado pero falló: hay que revisarlo.
+        El viento y el CO todavía no están calibrados: sus valores son aproximados.
+      </p>
+    </section>
+
+    <section aria-labelledby="tituloGraficos">
+      <h2 id="tituloGraficos">Historial <span class="detalle" id="resumenRango"></span></h2>
+      <div class="graficos" id="graficos"></div>
+    </section>
+
+    <section aria-labelledby="tituloTabla">
+      <div class="titulo-con-accion">
+        <h2 id="tituloTabla">Mediciones</h2>
+        <button type="button" id="descargar">Descargar CSV</button>
+      </div>
+      <div class="tabla-contenedor">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha y hora</th><th>Temp. (°C)</th><th>Humedad (%)</th><th>Viento (km/h)</th>
+              <th>CO (ppm)</th><th>Presión (hPa)</th><th>Dirección</th><th>Luz (lux)</th>
+            </tr>
+          </thead>
+          <tbody id="filas"></tbody>
+        </table>
+      </div>
+      <div class="paginas">
+        <button type="button" id="anterior">← Más nuevas</button>
+        <span id="pagina"></span>
+        <button type="button" id="siguiente">Más viejas →</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Proyecto escolar · el código está en el repositorio, carpeta <code>dashboard/</code>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
