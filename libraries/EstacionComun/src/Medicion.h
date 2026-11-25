@@ -36,7 +36,7 @@ struct Medicion {
   float temperatura;                 // °C
   float humedad;                     // %
   float velocidad;                   // km/h, promedio desde la medicion anterior
-  float gas;                         // unidad a definir con el sensor
+  float gas;                         // ppm de CO (MQ-7)
   float presion;                     // hPa, presion absoluta de la estacion
   float luminosidad;                 // lux
   char direccion[TAMANO_DIRECCION];  // "N", "NE" ... "NO"

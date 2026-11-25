@@ -42,8 +42,8 @@ sí es parte del proyecto es entregarle los datos en el formato acordado
 |---|---|---|
 | Temperatura y humedad | DHT22 (GPIO4) | Funcionando en banco |
 | Velocidad del viento | Encoder óptico FC-03 (GPIO18), disco de 30 ranuras | Funcionando en banco, falta calibrar |
-| Presión atmosférica | BMP180 (I²C 0x77) | **En camino**. Firmware listo, desactivado. Reemplaza al BME280, que no se consiguió |
-| Gas / calidad de aire | MQ-135 o ENS160 | **A comprar**. Mientras tanto `NaN` |
+| Presión atmosférica | BMP180 (I²C 0x77) | **En camino**. Firmware listo: hasta conectarlo manda `ERR`. Reemplaza al BME280, que no se consiguió |
+| Monóxido de carbono (CO) | MQ-7 (GPIO39, por divisor) | Firmware listo: hasta conectarlo manda `ERR`. **Sin calibrar** |
 | Luminosidad | BH1750 (sugerido) | **A definir**. Mientras tanto `NaN` |
 | Hora | NTP por internet, DS3231 de respaldo | DS3231 **a comprar**. Firmware listo, desactivado |
 | Pantalla | OLED SSD1306 128×64 (I²C 0x3C) | Disponible, en el firmware |
@@ -51,6 +51,12 @@ sí es parte del proyecto es entregarle los datos en el formato acordado
 | Lluvia *(opcional)* | Pluviómetro de balancín con un A3144 | Idea a futuro |
 
 Detalle completo en [`hardware/lista-componentes.md`](hardware/lista-componentes.md).
+**Qué cable va a qué pata:** [`hardware/conexiones.md`](hardware/conexiones.md).
+
+## Panel web
+
+Las mediciones (las de ahora y todo el historial de la planilla) se ven en
+**https://maxpower-ar.github.io/zeus/**. El código está en [`dashboard/`](dashboard/LEEME.md).
 
 ### Por qué dos sensores de temperatura
 

@@ -54,7 +54,7 @@ Ejemplos:
 | 4 | Temperatura | `26,1` | Acordado. Unidad: °C |
 | 5 | Humedad relativa | `24` | Acordado. Unidad: % |
 | 6 | Velocidad del viento | `12,4` | Acordado. **Unidad a confirmar** (km/h o m/s) |
-| 7 | Gas | `NaN` | Acordado el lugar. **Unidad a definir** con el sensor |
+| 7 | Gas | `NaN` | **ppm de CO** (MQ-7, desde 2026-11-24), sin decimales. Sin calibrar todavía |
 | 8 | Dirección del viento | `NaN` | Acordado el lugar. Sensor postergado: va `NaN` hasta que exista |
 | 9 | Presión atmosférica | `1013,2` | Agregado 2026-11-17. Unidad: hPa. **Presión absoluta de la estación** (BMP180), sin corregir a nivel del mar |
 | 10 | Luminosidad | `NaN` | Agregado 2026-11-17 porque la API del ITR lo pide. Unidad: lux. **Sin sensor todavía** |
@@ -91,8 +91,8 @@ sensor".
 ### JSON para la API del ITR
 
 Su API pide JSON, no la línea. El firmware lo arma en
-`libraries/EstacionComun/src/JsonItr.cpp` (envío **desactivado** hasta que su API acepte
-`null` y la fecha):
+`libraries/EstacionComun/src/JsonItr.cpp` (envío **activado** el 2026-11-24; ver
+limitaciones abajo):
 
 ```json
 {"codigo":"EM_ITR_001","fecha":"2026-11-22T13:35:00Z","temperatura":22.4,"humedad":48,
@@ -106,6 +106,23 @@ Su API pide JSON, no la línea. El firmware lo arma en
   **propuestas**: su API todavía no los guarda
 - Una medición por pedido. Si responden 400 o 422 (no aceptan esa medición), el firmware la
   saltea para no trabar a las demás; queda igual en la planilla
+
+**Formato que pasó el equipo de software** (2026-11-24, para `/api/lecturas`):
+
+```
+{ temperatura: 24, humedad: 50, co_concentracion: 4, velocidad_viento: 15, presion: 1013 }
+```
+
+El JSON de la estación ya trae esos cinco campos con esos nombres; los demás (`codigo`,
+`fecha`, `luminosidad`, `fallas`) no molestan. `co_concentracion` va en **ppm** (MQ-7).
+
+**Limitaciones con el envío activado (2026-11-24):**
+
+- Mientras un sensor obligatorio para ellos (temperatura, humedad, viento, CO) dé ERR, su API
+  rechaza la medición: se saltea y queda solo en la planilla. En el monitor serie aparece
+  `el ITR RECHAZO esta medicion`
+- Su API no guarda la hora de la medición: lo atrasado aparece con la hora de llegada
+- Sin la clave real en `CLAVE_API_ITR` el firmware no intenta y acumula pendientes
 
 ---
 

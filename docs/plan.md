@@ -138,7 +138,9 @@ tabla ajena.
 - [ ] Comparar la presión con la del servicio meteorológico local (la diferencia se explica
       por la altitud, que hay que medir: no se inventa)
 - [ ] DS3231 con la hora puesta y conservándola tras desenchufar la placa
-- [ ] Sensor de gas leyendo (con su tiempo de precalentamiento respetado)
+- [ ] Sensor de gas leyendo (con su tiempo de precalentamiento respetado). **Elegido: MQ-7**
+      (CO, GPIO39 por divisor). Código escrito el 2026-11-24, sin probar en la placa
+- [ ] Calibrar el MQ-7: divisor, VCC, RL y R0 (`hardware/calibraciones/mq7.md`)
 
 **Verificación:** presión creíble, la hora sobrevive a un corte de alimentación.
 
@@ -265,12 +267,16 @@ esto se probó todavía en la placa** (detalle en la bitácora del 2026-11-22).
 - [ ] Medición alineada al reloj cada `INTERVALO_MEDICION_S` (5 min; 1 min para probar),
       sin depender de la red
 - [ ] DHT22 desconectado a propósito → la medición sale con `ERR` y el monitor lo avisa
-- [ ] BMP180 con `BMP180_INSTALADO = false` → presión `NaN`; al llegar, activarlo y ver la
-      presión en hPa (absoluta, sin corregir a nivel del mar)
+- [ ] BMP180 (`BMP180_INSTALADO = true` desde el 2026-11-24): sin conectar da `ERR`; al
+      llegar, ver la presión en hPa (absoluta, sin corregir a nivel del mar)
+- [ ] MQ-7: sin conectar da `ERR`; conectado da ppm (sin calibrar). Cables según
+      `hardware/conexiones.md`
 - [ ] Pantalla OLED: última medición, WiFi, pendientes y hora
 - [ ] Tecla `w`: las mediciones se acumulan en la flash y se mandan solas al reconectar
 - [ ] La planilla muestra `ERR` en rojo y `doGet` lo devuelve como `"ERR"`
-- [ ] Envío al ITR: activar `ENVIAR_A_ITR` cuando su API acepte `null` y la fecha
+- [ ] Envío al ITR (activado el 2026-11-24): con la clave real, ver `201` en el monitor serie
+      y la lectura en su página
+- [ ] Panel web (`dashboard/`, GitHub Pages): muestra la medición nueva al minuto de llegar
 - [ ] DS3231: activar `RTC_INSTALADO` cuando se compre y probar un arranque sin red
 
 **Verificación:** con el firmware final la planilla recibe una fila por intervalo, sin huecos

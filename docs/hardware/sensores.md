@@ -335,9 +335,26 @@ servicio meteorológico local, explicando la diferencia por la altitud.
 
 ---
 
-## Sensor de gas *(a comprar)*
+## MQ-7 — monóxido de carbono (CO) *(elegido, 2026-11-24)*
 
-Dos alternativas, con un compromiso claro entre precio y comodidad.
+Se eligió el **MQ-7**, específico para CO, de la misma familia que el MQ-135 de abajo (mismo
+principio: un calefactor y una resistencia que baja con el gas).
+
+- **Alimentación:** 5 V (pata `VIN`), ~150 mA por el calefactor
+- **Salida AO:** analógica hasta 5 V → **divisor 10 kΩ / 20 kΩ** a GPIO39 (VN, ADC1)
+- **Cálculo:** de la tensión se despeja la resistencia del sensor Rs, y con la curva del
+  datasheet `ppm = 99.042 × (Rs/R0)^−1.518`. Se manda en el campo `gas`, en **ppm**
+- **Detección de falla:** con el módulo desconectado el divisor lleva el pin a 0 V → ERR
+- **Precalentamiento:** 24-48 h la primera vez; unos minutos cada vez que se enciende
+- **Sin calibrar** (R0, RL, divisor y VCC son provisionales): ver
+  `hardware/calibraciones/mq7.md`
+- **Limitación:** el datasheet pide alternar el calefactor 5 V / 1.4 V; el módulo lo deja fijo
+  en 5 V. La lectura es indicativa
+
+Conexión: `hardware/conexiones.md`.
+
+### Alternativas que se habían evaluado
+
 
 ### MQ-135 — el barato
 

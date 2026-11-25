@@ -45,6 +45,67 @@ Completar en la fase 0.
 
 ---
 
+## 2026-11-24 — Fase I — MQ-7, sensores en ERR, envío al ITR activado y panel web
+
+**Qué se hizo (sin hardware, solo código):**
+
+- **MQ-7 (CO)** en el firmware: GPIO39 (VN, ADC1) por un divisor 10 kΩ / 20 kΩ. De la
+  tensión se despeja Rs y se pasa a ppm con la curva del datasheet. Va en el campo `gas` de
+  la planilla y en `co_concentracion` del ITR. La pantalla lo muestra junto a la presión.
+- **BMP180 y MQ-7 marcados como instalados** aunque todavía no estén conectados: así la
+  planilla muestra ERR en rojo hasta que se conecten (pedido del usuario).
+- **Envío al ITR activado.** El formato que pasó el equipo de software
+  (`temperatura`, `humedad`, `co_concentracion`, `velocidad_viento`, `presion`) ya coincidía
+  con el JSON del firmware: no hizo falta cambiarlo. Si `CLAVE_API_ITR` es la de ejemplo,
+  no se intenta (las mediciones quedan pendientes para el ITR).
+- **Panel web** en `dashboard/`, publicado en GitHub Pages (rama `gh-pages`): lee el `doGet`
+  de la planilla; muestra lo actual, gráficos, tabla y CSV, de 24 h a todo el historial.
+- **Guía de conexiones** cable por cable: `hardware/conexiones.md`. Calibración del MQ-7:
+  `hardware/calibraciones/mq7.md`.
+
+**Decisiones:**
+
+1. **GPIO39 para el MQ-7:** ya estaba reservado para el gas en `pinout.md`; es ADC1 (el ADC2
+   no anda con WiFi). El defecto de GPIO36/39 (pulsos falsos) solo afecta a contar pulsos,
+   no a leer una tensión.
+2. **Falla del MQ-7 = menos de 50 mV en el pin.** Sin módulo, la resistencia de abajo del
+   divisor lleva el pin a 0 V. Arriba de 3100 mV también es ERR (ADC saturado). Riesgo: si
+   en aire muy limpio la salida real es menor a 50 mV, marcaría ERR falso; se revisa con el
+   multímetro en la primera prueba.
+3. **Constantes del MQ-7 provisionales** (`TODO: calibrar`): RL 1 kΩ, R0 1 kΩ, VCC 5 V,
+   divisor nominal. La curva (99.042, −1.518) es del datasheet, vía la librería
+   MQUnifiedsensor. Los ppm no son confiables hasta calibrar.
+4. **No hay precalentamiento en el código:** las primeras mediciones después de encender
+   salen altas. Se avisa al arrancar.
+5. **El anemómetro sigue sin poder dar ERR:** desconectado se ve igual que sin viento.
+6. **ITR y ERR:** su API pide números, así que una falla va como `null` y la rechazan si el
+   campo es obligatorio para ellos. Se saltea (queda en la planilla). No se inventan números
+   para que la acepten.
+7. **La URL del script queda pública** en `dashboard/config.js`: el panel la necesita para
+   leer. Solo permite leer; escribir pide `CLAVE_API`.
+8. **gh-pages con solo la carpeta `dashboard/`** (git subtree), en vez de publicar `docs/`
+   entero.
+
+**Verificación:**
+
+- Firmware: compilación limpia con `--warnings all`, **0 advertencias**, 88 % de la flash.
+- Panel: probado en Chrome sin ventana contra la planilla real (134 mediciones de
+  noviembre): tarjetas, gráficos de "Todo", tabla y modo claro/oscuro. A 375 px de ancho no
+  se desborda.
+- La planilla todavía responde con la **versión vieja** de `Codigo.gs` (el JSON no trae
+  `presion` ni `luminosidad`): falta publicar la nueva. Con la vieja, las líneas con `ERR`
+  se rechazan y **la estación no puede vaciar su cola**.
+- **Nada probado en la placa.** El MQ-7 no se conectó nunca.
+
+**Pendiente:**
+
+- [ ] Publicar `Codigo.gs` (Implementar → Administrar implementaciones → Nueva versión)
+- [ ] Pegar la clave real del ITR en `CLAVE_API_ITR`
+- [ ] Probar el MQ-7 en la placa y calibrarlo
+- [ ] Ver que el ITR acepte las mediciones con todos los sensores conectados
+
+---
+
 ## 2026-11-22 — Fase I (integración) — Firmware final y valor de falla `ERR`
 
 **Qué se hizo:** el firmware final en `estacion_campo/`, armado a partir de

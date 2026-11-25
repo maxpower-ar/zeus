@@ -115,7 +115,8 @@ static void dibujar() {
     renglon(4, texto);
 
     datoEnPantalla(a, sizeof(a), ultima.presion, ultima.estadoPresion, DECIMALES_PRESION);
-    snprintf(texto, sizeof(texto), "Presion %s hPa", a);
+    datoEnPantalla(b, sizeof(b), ultima.gas, ultima.estadoGas, DECIMALES_GAS);
+    snprintf(texto, sizeof(texto), "P %s hPa CO %s", a, b);  // "P 1013.2 hPa CO 1234"
     renglon(5, texto);
   } else {
     renglon(2, "Medicion: esperando");

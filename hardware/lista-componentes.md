@@ -27,7 +27,12 @@ componente no está acá, no existe en el proyecto.
 
 | Componente | Para qué | Nota |
 |---|---|---|
-| **BMP180** (módulo I²C) | **Presión** (y una segunda temperatura para comparar con el DHT22) | Reemplaza al BME280, que no se consiguió. **No mide humedad.** I²C 0x77, en el bus de GPIO21/22. Librería *Adafruit BMP085 Library*. El firmware ya lo soporta: al llegar, poner `BMP180_INSTALADO = true` en `estacion_campo/config.h` |
+| **BMP180** (módulo I²C) | **Presión** (y una segunda temperatura para comparar con el DHT22) | Reemplaza al BME280, que no se consiguió. **No mide humedad.** I²C 0x77, en el bus de GPIO21/22. Librería *Adafruit BMP085 Library*. El firmware ya lo lee (`BMP180_INSTALADO = true`): mientras no esté conectado manda ERR |
+
+| **MQ-7** (módulo, CO) | **Monóxido de carbono** en ppm (campo `gas` / `co_concentracion`) | 5 V, ~150 mA. AO por divisor 10 kΩ / 20 kΩ a GPIO39. El firmware ya lo lee (`MQ7_INSTALADO = true`): sin conectar manda ERR. **Sin calibrar** (`hardware/calibraciones/mq7.md`) |
+| Resistencias 10 kΩ ×3 | Divisor del MQ-7 (una arriba, dos en serie abajo) | Medirlas con el UT890C |
+
+Cómo se conecta cada cosa: [`conexiones.md`](conexiones.md).
 
 Se manda la **presión absoluta** de la estación, en hPa. No se corrige a nivel del mar: para
 eso hace falta la altitud del lugar medida, y todavía no la tenemos.
@@ -52,7 +57,7 @@ compensa la temperatura y se desvía ~2 minutos por año.
 | **MQ-135** | muy bajo | 5 V | Barato; su principio de funcionamiento es fácil de explicar | Analógico (necesita divisor), consume ~150 mA continuos, 24-48 h de precalentamiento inicial, calibración difícil |
 | **ENS160** | alto | 3.3 V | I²C, bajo consumo, entrega TVOC y eCO₂ ya procesados | Bastante más caro; el procesamiento está oculto adentro del chip |
 
-Hasta que haya sensor de gas, el campo va como `NaN`.
+**Elegido: MQ-7** (específico para CO, ver "En camino"). La tabla queda como registro de lo evaluado.
 
 **Recomendación: MQ-135.** Para un proyecto escolar alcanza, y poder explicar cómo funciona
 (un calefactor y una resistencia que cambia de valor según el gas presente) vale más en la

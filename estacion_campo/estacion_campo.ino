@@ -11,7 +11,8 @@
   Archivos (uno por responsabilidad):
     config.h         que hay instalado, pines, intervalos, calibraciones
     secretos.h       WiFi y claves. NO va al repositorio (copiar secretos_ejemplo.h)
-    sensores         DHT22 (temperatura, humedad) y BMP180 (presion)
+    sensores         DHT22 (temperatura, humedad), BMP180 (presion) y MQ-7 (CO)
+  Que cable va a que pin: hardware/conexiones.md
     anemometro       encoder optico, velocidad del viento
     registro         memoria flash: guardar primero, mandar despues
     red              WiFi y hora (NTP; DS3231 de respaldo en rtc)
@@ -48,18 +49,19 @@ static bool hayHoraAntes = false;
 static unsigned long ultimoAvisoSinHora = 0;
 
 static void imprimirMedicion(const char* titulo, const Medicion& m) {
-  char t[16], h[16], v[16], p[16];
+  char t[16], h[16], v[16], p[16], g[16];
   formatearDato(t, sizeof(t), m.temperatura, m.estadoTemperatura, DECIMALES_TEMPERATURA);
   formatearDato(h, sizeof(h), m.humedad, m.estadoHumedad, DECIMALES_HUMEDAD);
   formatearDato(v, sizeof(v), m.velocidad, m.estadoVelocidad, DECIMALES_VELOCIDAD);
   formatearDato(p, sizeof(p), m.presion, m.estadoPresion, DECIMALES_PRESION);
+  formatearDato(g, sizeof(g), m.gas, m.estadoGas, DECIMALES_GAS);
 
   time_t momento = (time_t)m.marcaTiempo;
   tm f;
   localtime_r(&momento, &f);
   Serial.printf("%s %02d:%02d  temp %s C  hum %s %%  viento %s km/h  presion %s hPa"
-                "  (gas, direccion, luz: NaN)\n",
-                titulo, f.tm_hour, f.tm_min, t, h, v, p);
+                "  CO %s ppm  (direccion, luz: NaN)\n",
+                titulo, f.tm_hour, f.tm_min, t, h, v, p, g);
 }
 
 static void medirYGuardar(time_t ahora) {
@@ -115,6 +117,7 @@ static void mostrarEstado() {
   imprimirInstalado("DHT22", DHT22_INSTALADO);
   imprimirInstalado("anemometro", ANEMOMETRO_INSTALADO);
   imprimirInstalado("BMP180", BMP180_INSTALADO);
+  imprimirInstalado("MQ-7 (CO)", MQ7_INSTALADO);
   imprimirInstalado("pantalla", PANTALLA_INSTALADA);
   imprimirInstalado("DS3231", RTC_INSTALADO);
   Serial.println("--------------");

@@ -11,6 +11,8 @@ sensor está instalado pero falló: hay que ir a revisarlo). Ver
 
 **Estado (2026-11-22):** compila sin advertencias. **No se probó todavía en la placa.**
 
+**Conexiones (qué cable va a qué pata):** [`hardware/conexiones.md`](../hardware/conexiones.md)
+
 ## Archivos
 
 | Archivo | Responsabilidad |
@@ -49,9 +51,10 @@ El struct `Medicion`, la línea al servidor y el JSON del ITR **no van acá**: v
 
 | Constante | Valor | Para qué |
 |---|---|---|
-| `BMP180_INSTALADO` | `false` | **Ponerlo en `true` cuando llegue el BMP180** y recompilar |
+| `BMP180_INSTALADO` | `true` | Sin conectar manda ERR (a propósito, hasta que llegue) |
+| `MQ7_INSTALADO` | `true` | MQ-7 (CO) en GPIO39 por divisor. Sin conectar manda ERR. Constantes `MQ7_*` sin calibrar |
 | `RTC_INSTALADO` | `false` | En `true` cuando se compre el DS3231 |
-| `ENVIAR_A_ITR` | `false` | En `true` cuando la API del ITR acepte `null` y la fecha |
+| `ENVIAR_A_ITR` | `true` | Necesita la clave real en `CLAVE_API_ITR` (`secretos.h`); con la de ejemplo no intenta y las guarda pendientes |
 | `INTERVALO_MEDICION_S` | `5 * 60` | Para probar: `1 * 60`. Nunca menos de 60 (no compila) |
 | `METROS_POR_PULSO` | `0.0471` | **TODO: calibrar** (anemómetro) |
 

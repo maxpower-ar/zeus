@@ -10,7 +10,16 @@ static const int HTTP_CREADO = 201;
 static const int HTTP_PEDIDO_INVALIDO = 400;
 static const int HTTP_NO_PROCESABLE = 422;
 
+// La que trae secretos_ejemplo.h. Con esa su API contesta 401: no tiene sentido intentar.
+static const char* const CLAVE_DE_EJEMPLO = "pegar-aca-la-clave-del-itr";
+
 ResultadoItr enviarMedicionItr(const Medicion& medicion) {
+  if (strcmp(CLAVE_API_ITR, CLAVE_DE_EJEMPLO) == 0) {
+    Serial.println("  FALTA la clave del ITR: pegarla en CLAVE_API_ITR (secretos.h). Las"
+                   " mediciones quedan guardadas para el ITR hasta que este");
+    return ITR_FALLO;
+  }
+
   char json[TAMANO_JSON_ITR];
   if (!armarJsonItr(json, sizeof(json), CODIGO_ESTACION, medicion)) {
     Serial.println("  ERROR: el JSON no entro en el buffer");

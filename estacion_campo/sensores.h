@@ -1,6 +1,7 @@
 #pragma once
 
-// Sensores de temperatura, humedad y presion: DHT22 (GPIO4) y BMP180 (I2C, 0x77).
+// Sensores de temperatura, humedad, presion y CO: DHT22 (GPIO4), BMP180 (I2C, 0x77) y
+// MQ-7 (GPIO39, analogico, por un divisor resistivo).
 //
 // Regla del proyecto: un sensor instalado que no responde NO produce un cero silencioso.
 //   - sensor no instalado (config.h)        -> el dato queda "sin sensor" (NaN)
@@ -14,7 +15,7 @@
 // Llamar despues de iniciar el bus I2C (Wire.begin).
 void iniciarSensores();
 
-// Lee el DHT22 y el BMP180 y completa temperatura, humedad y presion de la medicion.
+// Lee el DHT22, el BMP180 y el MQ-7 y completa temperatura, humedad, presion y gas (CO).
 // 'avisar' = imprimir en el monitor serie las fallas y la lectura del BMP180.
 void leerSensores(Medicion& medicion, bool avisar);
 

@@ -25,7 +25,7 @@ el estado se guarda aparte. Nunca se usa un número (`-1`, `0`) como marca.
 | Campo | Tipo | Bytes | Unidad |
 |---|---|---|---|
 | `marcaTiempo` | `uint32_t` | 4 | segundos desde 1970 (UTC) |
-| `temperatura`, `humedad`, `velocidad`, `gas`, `presion`, `luminosidad` | `float` ×6 | 24 | °C, %, km/h, —, hPa, lux |
+| `temperatura`, `humedad`, `velocidad`, `gas`, `presion`, `luminosidad` | `float` ×6 | 24 | °C, %, km/h, ppm de CO, hPa, lux |
 | `direccion` | `char[4]` | 4 | `"N"` … `"NO"` |
 | `estadoTemperatura` … `estadoDireccion` | `uint8_t` ×7 | 7 | `EstadoDato` |
 | `reservado` | `uint8_t` | 1 | relleno, siempre 0 |

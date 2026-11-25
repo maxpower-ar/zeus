@@ -1,5 +1,9 @@
 # Asignación de pines
 
+> **Para armar:** la guía cable por cable está en
+> [`hardware/conexiones.md`](../../hardware/conexiones.md). Este archivo explica *por qué*
+> cada pin.
+
 **Antes de asignar cualquier pin nuevo, leer este archivo.** Las asignaciones no son
 arbitrarias: cada una respeta restricciones físicas del ESP32 que se explican al final.
 
@@ -15,7 +19,7 @@ Placa: **ESP32 DevKit V1, 30 pines, ESP32-WROOM-32**.
 | *(libre, era LM35 #1)* | GPIO34 (D34) | **ADC1**, solo entrada | LM35 descartados |
 | *(libre, era LM35 #2)* | GPIO35 (D35) | **ADC1**, solo entrada | |
 | **Anemómetro (encoder óptico)** | **GPIO18** | Digital entrada, interrupción | Cuenta pulsos. **Nunca en 36 ni 39** |
-| Sensor de gas | GPIO39 (VN) | **ADC1**, solo entrada | Con divisor si la salida es de 5 V |
+| **MQ-7 (CO)** | **GPIO39 (VN)** | **ADC1**, solo entrada | AO por divisor 10 kΩ / 20 kΩ (la salida llega a 5 V). Ver `hardware/conexiones.md` |
 | Anemómetro de motor *(fase 3b)* | GPIO36 (VP) | **ADC1**, solo entrada | Solo para el experimento comparativo. Con divisor resistivo |
 | Tensión de batería | GPIO33 | **ADC1** | Con divisor. Fase opcional B |
 | I²C SDA | GPIO21 | Bus compartido | BMP180 + pantalla OLED + DS3231 (cuando se compre) |
